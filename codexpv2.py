@@ -56,17 +56,17 @@ init_conf_vtm7 = {
     ]
 }
 
-def loadconf():
-    if not os.path.exists("experiments.json"):
-        print("experiments.json don't exist. Use init.")
+def loadconf(fn="experiments.json"):
+    if not os.path.exists(fn):
+        print("fn don't exist. Use init.")
         exit(0)
-    with open("experiments.json", "r") as f:
+    with open(fn, "r") as f:
         conf = json.load(f)
     return conf
 
 
-def saveconf(conf):
-    with open("experiments.json", "w") as f:
+def saveconf(conf, fn="experiments.json"):
+    with open(fn, "w") as f:
         json.dump(conf, f, indent=4)
 
 def getabspath(s):
@@ -188,6 +188,7 @@ def tasks():
             count = 0
             for item in items:
                 inname = item.split('/')[-1].split(".")[0]
+                nframes = int(yuvmeta[item]["FramesToBeEncoded"])
                 for para in paras:
                     if mode == "RATE":
                         mode_cmd = "--RateControl=1 --TargetBitrate={}000".format(para)
@@ -195,7 +196,6 @@ def tasks():
                         mode_cmd = "--QP={}".format(para)
                     elif mode == "QPIF":
                         # QPIF 32.7 -> QP32 qpif0.3*nframes
-                        nframes = int(yuvmeta[item]["FramesToBeEncoded"])
                         para = float(para)
                         qp = int(para)
                         qpif = int((qp + 1 - para)*nframes)
@@ -206,7 +206,7 @@ def tasks():
                             outname=outname, mode_cmd=mode_cmd, **conf["path"])
 
                     log = shell.split()[-1]
-                    conf["tasks"][log] = {"status": "wait", "shell": shell}
+                    conf["tasks"][log] = {"status": "0/%d"%nframes, "shell": shell}
                     count = count+1
             
             print("[task+%3d] %s" % (count,group))
@@ -221,43 +221,58 @@ def run(core=4):
     except:
         print("Server Not Running. Try python3 server.py")
 
-def analyze():
-    conf = loadconf()
-    tasks = conf["tasks"]
-    count = {"wait": 0, "fail": 0, "success": 0}
-    print('\n---Analyze specified tasks.---')
+def show():
+    history = loadconf(fn="history.json")
+    recent = sorted(history.keys(),reverse=True)
+    tasks = history[recent[0]]
+    count = {"wait": 0, "excute": 0, "finish": 0}
+    print('\n---Analyze recent tasks.---')
+    print("EXP @",recent[0])
+    
+    # read log
     results = []
     for tkey, tvalue in tasks.items():
         with open(tkey, "r") as f:
-            brief = f.readlines()[-4:]
-            if brief[-2].split()[0] == "finished":
-                tvalue["status"] = "success"
-                items = brief[0].split()
-                results.append([tkey, items[2], items[6]])
+            lines = list(f.readlines())
+            nline = len(lines)
+            cur, total = tvalue["status"].split('/')
+            cur, total = int(cur), int(total)
+            if nline < 10:
+                cur = 0
+                status = "wait"
             else:
-                tvalue["status"] = "fail"
-        count[tvalue["status"]] += 1
-    print('Total %d tasks, %d wait, %d fail, %d success.' %
-          (len(tasks), count["wait"], count["fail"], count["success"]))
+                if lines[-2] and lines[-2].split()[0] == "finished":
+                    cur = total
+                    status = "finish"
+                    items = lines[0].split()
+                    results.append([tkey, items[2], items[6]])
+                else:
+                    status = "excute"
+                    cur = min(nline-10,total)
+        tvalue["status"] = "%3d/%3d"%(cur, total)
+        count[status] += 1
+        print("[{}] {}".format(tvalue["status"],tkey.split("/")[-1]))
+    print('Total %d tasks, %d wait, %d excute, %d finish.' %
+          (len(tasks), count["wait"], count["excute"], count["finish"]))
     with open("result.csv","w") as f:
         f.write("file,bitrate,YUV-PSNR\n")
         for result in results:
             f.write(','.join(result)+'\n')
     print("result.csv generated.")
-    saveconf(conf)
+    saveconf(history, fn="history.json")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Media Encoding Experiment Manager. Copyright @ 2016-2020')
     parser.add_argument(
-        "verb", choices=['start', 'init', 'check', 'meta', 'shell', 'run', 'analyze'])
+        "verb", choices=['start', 'init', 'meta', 'run', 'show'])
     parser.add_argument("--force", action='store_true', default=False,
                         help="init force overwrite experiments.json")
     parser.add_argument("--core", type=int, default=4,
                         help="run with n concurrent process")
     args = parser.parse_args()
     dict_func = {'init': init, 'start': start,
-                 'meta': meta, 'tasks': tasks, 'run': run,'analyze':analyze}
+                 'meta': meta, 'run': run, 'show':show}
     if args.verb == 'start':
         start(args.force)
     elif args.verb == 'run':

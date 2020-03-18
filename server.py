@@ -91,10 +91,18 @@ def run(core=4):
     HistoryConf.save("history.json")
 
     scripts = []
-    count = {"wait": 0, "fail": 0, "success": 0}
+    count = {"wait": 0, "excute": 0, "finish": 0}
     for tvalue in tasks.values():
-        count[tvalue["status"]] += 1
-        if tvalue["status"] != "success":
+        cur, total = tvalue["status"].split('/')
+        cur, total = int(cur), int(total)
+        if cur == 0:
+            status = "wait"
+        elif cur == total:
+            status = "finish"
+        else:
+            status = "excute"
+        count[status] += 1
+        if status != "finish":
             scripts.append(tvalue["shell"])
     
     res = '\n'.join([
