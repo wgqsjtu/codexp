@@ -244,7 +244,7 @@ def show():
                 if lines[-2] and lines[-2].split()[0] == "finished":
                     cur = total
                     status = "finish"
-                    items = lines[0].split()
+                    items = lines[-4].split()
                     results.append([tkey, items[2], items[6]])
                 else:
                     status = "excute"

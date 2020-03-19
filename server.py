@@ -108,7 +108,7 @@ def run(core=4):
     res = '\n'.join([
         '\n---Excute specified tasks.---',
         'Total %d tasks, %d wait, %d fail, %d success.' % \
-            (len(tasks), count["wait"], count["fail"], count["success"]),
+            (len(tasks), count["wait"], count["excute"], count["finish"]),
         'Excute the %d shell script with %d process.\n' % \
             (len(scripts), core)
     ])
