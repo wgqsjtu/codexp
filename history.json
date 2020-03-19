@@ -1,0 +1,52 @@
+{
+    "03-19 09:29": {
+        "/home/faymek/endark/darkset/193_QP_32.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/193.cfg --InputFile=/home/faymek/data/darkset/193.yuv  --BitstreamFile=/home/faymek/endark/darkset/193_QP_32.bin --ReconFile=/home/faymek/endark/darkset/193_QP_32.yuv  --QP=32 > /home/faymek/endark/darkset/193_QP_32.log "
+        },
+        "/home/faymek/endark/darkset/193_QP_37.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/193.cfg --InputFile=/home/faymek/data/darkset/193.yuv  --BitstreamFile=/home/faymek/endark/darkset/193_QP_37.bin --ReconFile=/home/faymek/endark/darkset/193_QP_37.yuv  --QP=37 > /home/faymek/endark/darkset/193_QP_37.log "
+        },
+        "/home/faymek/endark/darkset/193_QP_42.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/193.cfg --InputFile=/home/faymek/data/darkset/193.yuv  --BitstreamFile=/home/faymek/endark/darkset/193_QP_42.bin --ReconFile=/home/faymek/endark/darkset/193_QP_42.yuv  --QP=42 > /home/faymek/endark/darkset/193_QP_42.log "
+        },
+        "/home/faymek/endark/darkset/192_QP_32.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/192.cfg --InputFile=/home/faymek/data/darkset/192.yuv  --BitstreamFile=/home/faymek/endark/darkset/192_QP_32.bin --ReconFile=/home/faymek/endark/darkset/192_QP_32.yuv  --QP=32 > /home/faymek/endark/darkset/192_QP_32.log "
+        },
+        "/home/faymek/endark/darkset/192_QP_37.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/192.cfg --InputFile=/home/faymek/data/darkset/192.yuv  --BitstreamFile=/home/faymek/endark/darkset/192_QP_37.bin --ReconFile=/home/faymek/endark/darkset/192_QP_37.yuv  --QP=37 > /home/faymek/endark/darkset/192_QP_37.log "
+        },
+        "/home/faymek/endark/darkset/192_QP_42.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/192.cfg --InputFile=/home/faymek/data/darkset/192.yuv  --BitstreamFile=/home/faymek/endark/darkset/192_QP_42.bin --ReconFile=/home/faymek/endark/darkset/192_QP_42.yuv  --QP=42 > /home/faymek/endark/darkset/192_QP_42.log "
+        },
+        "/home/faymek/endark/darkset/194_QP_32.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/194.cfg --InputFile=/home/faymek/data/darkset/194.yuv  --BitstreamFile=/home/faymek/endark/darkset/194_QP_32.bin --ReconFile=/home/faymek/endark/darkset/194_QP_32.yuv  --QP=32 > /home/faymek/endark/darkset/194_QP_32.log "
+        },
+        "/home/faymek/endark/darkset/194_QP_37.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/194.cfg --InputFile=/home/faymek/data/darkset/194.yuv  --BitstreamFile=/home/faymek/endark/darkset/194_QP_37.bin --ReconFile=/home/faymek/endark/darkset/194_QP_37.yuv  --QP=37 > /home/faymek/endark/darkset/194_QP_37.log "
+        },
+        "/home/faymek/endark/darkset/194_QP_42.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/194.cfg --InputFile=/home/faymek/data/darkset/194.yuv  --BitstreamFile=/home/faymek/endark/darkset/194_QP_42.bin --ReconFile=/home/faymek/endark/darkset/194_QP_42.yuv  --QP=42 > /home/faymek/endark/darkset/194_QP_42.log "
+        }
+    },
+    "03-19 15:31": {
+        "/home/faymek/endark/darkset/189_QP_32.log": {
+            "status": "0/120",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/189.cfg --InputFile=/home/faymek/data/darkset/189.yuv  --BitstreamFile=/home/faymek/endark/darkset/189_QP_32.bin --ReconFile=/home/faymek/endark/darkset/189_QP_32.yuv  --QP=32 > /home/faymek/endark/darkset/189_QP_32.log "
+        }
+    },
+    "03-19 17:27": {
+        "/home/faymek/endark/darkset/052_QP_32.log": {
+            "status": "0/150",
+            "shell": "/home/faymek/VVCSoftware_VTM/bin/EncoderAppStatic -c /home/faymek/VVCSoftware_VTM/cfg/encoder_randomaccess_vtm.cfg  -c /home/faymek/data/darkset/cfg/052.cfg --InputFile=/home/faymek/data/darkset/052.yuv  --BitstreamFile=/home/faymek/endark/darkset/052_QP_32.bin --ReconFile=/home/faymek/endark/darkset/052_QP_32.yuv  --QP=32 > /home/faymek/endark/darkset/052_QP_32.log "
+        }
+    }
+}
