@@ -1,0 +1,93 @@
+{
+    "variable": {
+        "base": "/home/faymek/codexp",
+        "inpath": "{base}/seq",
+        "output": "{base}/result/{$inname}_{$modename}_{para}"
+    },
+    "iterate": [
+        "input | $mode | para",
+        "{inpath}/*.yuv | QP | 27,32,37,42"
+    ],
+    "auto": {
+        "$inname": "os.path.basename(state['input']).split('.')[0]",
+        "$modename": "state['$mode'].replace('$','')",
+        "$mode": {
+            "QP": "-q {para}",
+            "RATE": "--RateControl=1 --TargetBitrate={para}000",
+            "$QPIF": "modeQPIF(state)"
+        },
+        "$meta": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "$FramesToBeEncoded": "str(calcAllFrames(state))",
+            "$IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
+            "Level": "3.1"
+        }
+    },
+    "shell": [
+        "x265 --preset fast",
+        "--input {input} --fps 25 --input-res 3840x2160",
+        "--output {output}.bin",
+        "--psnr --ssim --csv {output}.csv --csv-log-level 2",
+        " -f 250 {$mode} {para}"
+    ],
+    "meta": {
+        "/home/faymek/codexp/seq/040.yuv": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "300",
+            "IntraPeriod": "32",
+            "Level": "3.1"
+        },
+        "/home/faymek/codexp/seq/039.yuv": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "300",
+            "IntraPeriod": "32",
+            "Level": "3.1"
+        }
+    },
+    "tasks": {
+        "/home/faymek/codexp/result/039_QP_27": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/039.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/039_QP_27.bin --psnr --ssim --csv /home/faymek/codexp/result/039_QP_27.csv --csv-log-level 2  -f 250 -q 27 27"
+        },
+        "/home/faymek/codexp/result/039_QP_32": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/039.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/039_QP_32.bin --psnr --ssim --csv /home/faymek/codexp/result/039_QP_32.csv --csv-log-level 2  -f 250 -q 32 32"
+        },
+        "/home/faymek/codexp/result/039_QP_37": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/039.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/039_QP_37.bin --psnr --ssim --csv /home/faymek/codexp/result/039_QP_37.csv --csv-log-level 2  -f 250 -q 37 37"
+        },
+        "/home/faymek/codexp/result/039_QP_42": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/039.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/039_QP_42.bin --psnr --ssim --csv /home/faymek/codexp/result/039_QP_42.csv --csv-log-level 2  -f 250 -q 42 42"
+        },
+        "/home/faymek/codexp/result/040_QP_27": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/040.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/040_QP_27.bin --psnr --ssim --csv /home/faymek/codexp/result/040_QP_27.csv --csv-log-level 2  -f 250 -q 27 27"
+        },
+        "/home/faymek/codexp/result/040_QP_32": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/040.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/040_QP_32.bin --psnr --ssim --csv /home/faymek/codexp/result/040_QP_32.csv --csv-log-level 2  -f 250 -q 32 32"
+        },
+        "/home/faymek/codexp/result/040_QP_37": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/040.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/040_QP_37.bin --psnr --ssim --csv /home/faymek/codexp/result/040_QP_37.csv --csv-log-level 2  -f 250 -q 37 37"
+        },
+        "/home/faymek/codexp/result/040_QP_42": {
+            "status": "0",
+            "shell": "x265 --preset fast --input /home/faymek/codexp/seq/040.yuv --fps 25 --input-res 3840x2160 --output /home/faymek/codexp/result/040_QP_42.bin --psnr --ssim --csv /home/faymek/codexp/result/040_QP_42.csv --csv-log-level 2  -f 250 -q 42 42"
+        }
+    }
+}

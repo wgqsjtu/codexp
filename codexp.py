@@ -25,7 +25,7 @@ conf_pro = {
         "$mode": {
             "QP": "-q {para}",
             "RATE": "--RateControl=1 --TargetBitrate={para}000",
-            "$QPIF": "modeQPIF()"
+            "$QPIF": "modeQPIF(state)"
         },
         "$meta": {
             "InputBitDepth": "8",
@@ -33,7 +33,7 @@ conf_pro = {
             "FrameRate": "30",
             "SourceWidth": "1920",
             "SourceHeight": "1080",
-            "$FramesToBeEncoded": "str(calcAllFrames())",
+            "$FramesToBeEncoded": "str(calcAllFrames(state))",
             "$IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
             "Level": "3.1"
         }
@@ -43,7 +43,7 @@ conf_pro = {
         "--input {input} --fps 25 --input-res 3840x2160",
         "--output {output}.bin",
         "--psnr --ssim --csv {output}.csv --csv-log-level 2",
-        " -f 250 {mode} {para}"
+        " -f 250 {$mode} {para}"
     ]
 }
 
@@ -239,7 +239,7 @@ def meta():
 
         cfg = file.replace(".yuv", ".cfg")
         with open(cfg, "w") as autocfg:
-            for key, value in meta.items():
+            for key, value in new_meta.items():
                 autocfg.write('{0:30}: {1}\n'.format(key, value))
     
     saveconf(conf)
