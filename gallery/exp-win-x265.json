@@ -1,0 +1,20 @@
+{
+    "const": {
+        "base": "C:\\Users\\313\\Desktop\\wgq",
+        "inpath": "{base}\\seq"
+    },
+    "iterate": [
+        "input | mode | para",
+        "{inpath}\\*.yuv | -q | 27,32,37,42"
+    ],
+    "compute": {
+        "output": "{base}\\result\\{inname}_{mode}_{para}"
+    },
+    "shell": [
+        "x265 --preset fast",
+        "--input {input} --fps 25 --input-res 3840x2160",
+        "--output {output}.bin",
+        "--psnr --ssim --csv {output}.csv --csv-log-level 2",
+        " -f 250 {mode} {para}"
+    ]
+}

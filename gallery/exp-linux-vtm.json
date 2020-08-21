@@ -1,0 +1,38 @@
+{
+    "const": {
+        "version": "linux VTM-7.0",
+        "base": "~/VVCSoftware_VTM/",
+        "encoder": "{base}/bin/EncoderAppStatic",
+        "enccfg": "{base}/cfg/encoder_randomaccess_vtm.cfg",
+        "seqpath": "~/data/darkset",
+        "cfgpath": "~/data/darkset/cfg",
+        "outpath": "~/endark/darkset/"
+    },
+    "iterate": [
+        "input | mode | para",
+        "052.yuv | QP | 32"
+    ],
+    "compute": {
+        "output": "{outpath}/{inname}_{mode}_{para}",
+        "auto_mode": {
+            "QP": "-q {para}",
+            "RATE": "--RateControl=1 --TargetBitrate={para}000"
+        },
+        "auto_meta": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "",
+            "IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
+            "Level": "3.1"
+        }
+    },
+    "shell": [
+        "{encoder} -c {enccfg} ",
+        "-c {cfgpath}/{inname}.cfg --InputFile={input} ",
+        "--BitstreamFile={output}.bin --ReconFile={output}.yuv ",
+        "{mode_cmd} > {output}.log "
+    ]
+}

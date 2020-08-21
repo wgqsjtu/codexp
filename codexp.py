@@ -9,6 +9,65 @@ import glob
 
 base_url = 'http://127.0.0.1:42024' # Set destination URL here
 
+conf_pro = {
+    "variable": {
+        "base": "/home/faymek/codexp",
+        "inpath": "{base}/seq",
+        "output": "{base}/result/{$inname}_{$modename}_{para}"
+    },
+    "iterate": [
+        "input | $mode | para",
+        "{inpath}/*.yuv | QP | 27,32,37,42"
+    ],
+    "auto": {
+        "$inname": "os.path.basename(state['input']).split('.')[0]",
+        "$modename": "state['$mode'].replace('$','')",
+        "$mode": {
+            "QP": "-q {para}",
+            "RATE": "--RateControl=1 --TargetBitrate={para}000",
+            "$QPIF": "modeQPIF()"
+        },
+        "$meta": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "$FramesToBeEncoded": "str(calcAllFrames())",
+            "$IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
+            "Level": "3.1"
+        }
+    },
+    "shell": [
+        "x265 --preset fast",
+        "--input {input} --fps 25 --input-res 3840x2160",
+        "--output {output}.bin",
+        "--psnr --ssim --csv {output}.csv --csv-log-level 2",
+        " -f 250 {mode} {para}"
+    ]
+}
+
+default_auto = {
+    "$inname": "os.path.basename(context['input']).split('.')[0]",
+    "$modename": "context['$mode']"
+}
+
+def calcAllFrames(state):
+    meta = state['meta'][state['input']]
+    return readyuv420(state['input'], \
+            meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
+
+def modeQPIF(state):
+    # QPIF 32.7 -> QP32 qpif0.3*nframes
+    if not "FramesToBeEncoded" in state['meta'][state['input']]:
+        print("In QPIF mode, no meta information find. Use meta.")
+        return ""
+    nframes = eval(state['meta'][state['input']]["FramesToBeEncoded"])
+    para = float(state['para'])
+    qp = int(para)
+    qpif = int((qp + 1 - para)*nframes)
+    return "--QP={} --QPIncrementFrame={}".format(qp, qpif)
+
 def post(addr, pf):
     request = Request(base_url+addr, urlencode(pf).encode())
     return urlopen(request).read().decode()
@@ -17,104 +76,24 @@ def get(addr):
     request = Request(base_url+addr)
     return urlopen(request).read().decode()
 
-init_conf_vtm7 = {
-    "manual": {
-        "version": "VTM 7.0",
-        "base": "~/VVCSoftware_VTM/",
-        "encoder": "{base}/bin/EncoderAppStatic",
-        "enccfg": "{base}/cfg/encoder_randomaccess_vtm.cfg",
-        "seqpath": "~/data/darkset",
-        "cfgpath": "~/data/darkset/cfg",
-        "outpath": "~/endark/darkset/",
-        "meta": {
-            "InputBitDepth": "8",
-            "InputChromaFormat": "420",
-            "FrameRate": "30",
-            "SourceWidth": "1920",
-            "SourceHeight": "1080",
-            "FramesToBeEncoded": "'300' if meta['FrameRate'] == '60' else '150'",
-            "IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
-            "Level": "'6.2' if meta['InputBitDepth'] == '10' else '3.1'"
-        }
-    },
-    "exps": [
-        {
-            "title": "qp_test",
-            "groups": [
-                "Campfire.yuv  QPIF  32.7  32.8",
-                "*.yuv QP 27 32"
-            ],
-            "outname": "{inname}_{mode}_{para}",
-            "status": "wait"
-        }
-    ],
-    "shell": [
-        "{encoder} -c {enccfg} ",
-        "-c {cfgpath}/{inname}.cfg --InputFile={seqpath}/{inname}.yuv ",
-        "--BitstreamFile={outpath}/{outpath}.bin --ReconFile={outpath}/{outname}.yuv ",
-        "{mode_cmd} > {outpath}/{outname}.log "
-    ]
-}
-
-def loadconf(fn="experiments.json"):
+def loadconf(fn=None):
+    if not fn:
+        fn = getlatestjob() 
     if not os.path.exists(fn):
-        print("fn don't exist. Use init.")
+        print("The Job doesn't exist. Use init.")
         exit(0)
     with open(fn, "r") as f:
         conf = json.load(f)
     return conf
 
-
-def saveconf(conf, fn="experiments.json"):
+def saveconf(conf, fn=None):
+    if not fn:
+        fn = getlatestjob() 
     with open(fn, "w") as f:
         json.dump(conf, f, indent=4)
 
 def getabspath(s):
-    return os.path.abspath(os.path.expanduser(s.replace("{base}",".")))
-
-def init(force=False):
-    if os.path.exists("experiments.json") and not force:
-        print("[ok] experiments.json already exists.")
-        return
-    print("[ok] experiments.json newly created.")
-    with open("experiments.json", "w") as f:
-        json.dump(init_conf_vtm7, f, indent=4)
-
-
-def start(force=False):
-    print('---Checking the json.---')
-    init(force)
-    conf = loadconf()
-    manual = conf["manual"]
-
-    print('\n---Checking the manual path.---')
-    tmpdir = os.getcwd()
-    basedir = os.path.expanduser(manual["base"])
-    os.chdir(basedir)
-
-    conf["path"] = {
-        "encoder": getabspath(manual["encoder"]),
-        "enccfg": getabspath(manual["enccfg"]),
-        "seqpath": getabspath(manual["seqpath"]),
-        "outpath": getabspath(manual["outpath"]),
-        "cfgpath": getabspath(manual["cfgpath"])
-    }
-
-    os.chdir(tmpdir)
-    saveconf(conf)
-    print("[ok] Absolute path generated in experiments.json")
-
-    print('\n---Checking the cfg.---')
-    path = conf["path"]
-    os.makedirs(path["outpath"], exist_ok=True)
-    if os.path.exists(path["cfgpath"]) and os.listdir(path["seqpath"]):
-        print("[ok] Cfg of sequence exists.")
-    else:
-        print("[warning] Cfg of sequence do not exists! Use meta.")
-        if force:
-            meta()
-
-    tasks()
+    return os.path.abspath(os.path.expanduser(s))
 
 def readyuv420(filename, bitdepth, W, H):
     if bitdepth == '8':
@@ -128,21 +107,114 @@ def readyuv420(filename, bitdepth, W, H):
     totalframe = fp.tell() // bytesPerFrame
     return str(totalframe)
 
+def getlatestjob():
+    jobs = sorted(glob.glob("job*.json"))
+    return jobs[-1] if jobs else ""
+
+
+def init(template="conf_win_x265"):
+    lastjob = getlatestjob()
+    idx = int(lastjob[3:7]) + 1 if lastjob else 1  # get next job id
+    curjob = "job%04d.json"%idx
+    with open(curjob, "w") as f:
+        json.dump(conf_pro, f, indent=4)
+    print("[ok] %s newly created."%curjob)
+
+
+def start(force=False):
+    conf = loadconf()
+
+    # get {var} completed except key_tofill.
+    # -  key_auto: {$var} are system preserved to be computed.
+    # -  key_it: iterate keys are kept to be filled by paras.
+    key_auto = ['$inname', '$mode', '$meta', '$modename']
+    
+    it_sheet = []
+    for v in conf["iterate"]:
+        it_sheet.append( v.replace(' ', '').split('|') )
+    key_it = it_sheet[0]
+
+    state = {k:"{%s}"%k for k in key_it+key_auto} # keep the same after format
+    state.update(conf["variable"])
+
+    for k, v in conf["variable"].items():
+        t = v.format(**state)
+        if '\\' in v or '/' in v:
+            t = getabspath(t)
+            os.makedirs(os.path.dirname(t), exist_ok=True)
+        state[k] = t
+    
+    # get sheet(2D) -> table(3D)
+    it_table = [] # 3D array
+    for p1 in it_sheet[1:]:
+        t1 = []
+        for p2 in p1:
+            t2 = []
+            for p3 in p2.split(','):
+                p3 = p3.format(**state)
+                if '*' in p3:
+                    t2.extend(sorted(glob.glob(p3)))
+                else:
+                    t2.append(p3)
+            t1.append(t2)
+        it_table.append(t1)
+    
+    # get table(3D) ->paras(2D), using eval trick
+    # 1,2|3,4,5|6|7,8 -> 1367,1368,1467,1468,...
+    paras = []
+    for p in it_table:
+        tuples = ','.join(["t%d"%t for t in range(len(p))])
+        fors = ' '.join(['for t{0} in p[{0}]'.format(t) for t in range(len(p))])
+        trick = "[({}) {}]".format(tuples,fors)
+        paras.extend(eval(trick,{"p":p}))
+
+    # get meta information
+    if 'meta' not in conf:
+        meta = []
+        for p in it_table:
+            meta.extend(p[0])
+        conf['meta'] = {k:{} for k in list(set(meta))}
+        saveconf(conf)
+    state['meta'] = conf['meta']
+
+    # get tasks iterately by using it_dict
+    tasks = {}
+    cmd = ' '.join(conf["shell"]).format(**state)
+    default_auto.update(conf["auto"])
+    compute = default_auto
+    for values in paras:
+        context = {k:v for k,v in zip(key_it,values)}
+        state.update(context)
+        
+        for k,v in compute.items():
+            if k.startswith('$') and type(v) is str:
+                state[k] = eval(v)
+
+        if '$mode' in key_it:
+            key = state['$mode']
+            value = compute['$mode'][key]
+            if "$" in key:
+                state['$mode'] = eval(value)
+            else:
+                state['$mode'] = value.format(**state)
+            
+        shell = cmd.format(**state)
+        output = state["output"].format(**state)
+        tasks[output] = {"status": "0", "shell": shell}
+    
+    conf["tasks"] = tasks
+    saveconf(conf)
+    print("[task+%3d] generated." % len(tasks))
+
+
 def meta():
     conf = loadconf()
-    seqpath = conf["path"]["seqpath"]
-    cfgpath = conf["path"]["cfgpath"]
-
-    print("--Try to create cfg of sequence.--")
-    conf["yuvmeta"] = {}
-    os.makedirs(cfgpath, exist_ok=True)
-    for filename in glob.glob(seqpath+"/*.yuv"):
-
-        # from experiments.json
-        meta = conf["manual"]["meta"].copy()
-        for key,value in meta.items():
-            if "if" in value:
-                meta[key] = str(eval(value))
+    
+   
+    for file in conf['meta']:
+        
+        filename = os.path.basename(file)
+        meta = conf["auto"]["$meta"].copy()
 
         # from filename
         for item in filename.split("_"):
@@ -155,28 +227,30 @@ def meta():
             elif item in ["444", "440", "422", "411", "420", "410", "311"]:
                 meta["InputChromaFormat"] = item
         
-        # from .yuv
-        if meta["FramesToBeEncoded"] == "":
-            meta["FramesToBeEncoded"] = readyuv420(filename, \
-                    meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
+        state = {'input':file,'meta':{file:meta}}
+        new_meta = {}
+        for key,value in meta.items():
+            if "$" in key:
+                new_meta[key[1:]] = str(eval(value))
+            else:
+                new_meta[key] = value
+        conf["meta"][file] = new_meta
+            
 
-        conf["yuvmeta"][filename] = meta
-
-        cfgname = filename.split("/")[-1].replace(".yuv", ".cfg")
-        #print(os.path.join(cfgpath, cfgname))
-        with open(os.path.join(cfgpath, cfgname), "w") as autocfg:
+        cfg = file.replace(".yuv", ".cfg")
+        with open(cfg, "w") as autocfg:
             for key, value in meta.items():
                 autocfg.write('{0:30}: {1}\n'.format(key, value))
-
+    
     saveconf(conf)
-    print("[meta+%3d] Auto parsing finished. Please check."%len(conf["yuvmeta"]))
+    print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
 
 
 def tasks():
     conf = loadconf()
     print('\n---Generate shell script.---')
     seqpath = conf["path"]["seqpath"]
-    yuvmeta = conf["yuvmeta"]
+    meta = conf["meta"]
 
     conf["tasks"] = {}
     for count, exp in enumerate(conf["exps"]):
@@ -188,7 +262,7 @@ def tasks():
             count = 0
             for item in items:
                 inname = item.split('/')[-1].split(".")[0]
-                nframes = int(yuvmeta[item]["FramesToBeEncoded"])
+                nframes = int(meta[item]["FramesToBeEncoded"])
                 for para in paras:
                     if mode == "RATE":
                         mode_cmd = "--RateControl=1 --TargetBitrate={}000".format(para)
