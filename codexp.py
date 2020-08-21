@@ -6,6 +6,7 @@ import re
 import json
 import argparse
 import glob
+import time
 
 base_url = 'http://127.0.0.1:42024' # Set destination URL here
 
@@ -122,9 +123,9 @@ def readcfg(fn):
 
 
 def init(template="conf_win_x265"):
-    lastjob = getlatestjob()
-    idx = int(lastjob[3:7]) + 1 if lastjob else 1  # get next job id
-    curjob = "job%04d.json"%idx
+    lastjob = getlatestjob().split('.')[0]
+    idx = int(lastjob[3:]) + 1 if lastjob else 1  # get next job id
+    curjob = "job%03d.json"%idx
     with open(curjob, "w") as f:
         json.dump(conf_pro, f, indent=4)
     print("[ok] %s newly created."%curjob)
@@ -136,7 +137,7 @@ def start(force=False):
     # get {var} completed except key_tofill.
     # -  key_auto: {$var} are system preserved to be computed.
     # -  key_it: iterate keys are kept to be filled by paras.
-    key_auto = ['$inname', '$mode', '$meta', '$modename']
+    key_auto = ['$inname', '$mode', '$meta', '$modename', '$timestamp', '$cfgname']
     
     it_sheet = []
     for v in conf["iterate"]:
@@ -162,7 +163,7 @@ def start(force=False):
             for p3 in p2.split(','):
                 p3 = p3.format(**state)
                 if '*' in p3:
-                    t2.extend(sorted(glob.glob(p3)))
+                    t2.extend(sorted(glob.glob(p3, recursive=True)))
                 else:
                     t2.append(p3)
             t1.append(t2)
@@ -176,9 +177,12 @@ def start(force=False):
         fors = ' '.join(['for t{0} in p[{0}]'.format(t) for t in range(len(p))])
         trick = "[({}) {}]".format(tuples,fors)
         paras.extend(eval(trick,{"p":p}))
+    
+    if len(paras) == 0:
+        print("Maybe the wrong file glob.")
 
     # get meta information
-    if 'meta' not in conf:
+    if 'meta' not in conf or len(conf['meta'])==0:
         meta = []
         for p in it_table:
             meta.extend(p[0])
@@ -191,6 +195,7 @@ def start(force=False):
     cmd = ' '.join(conf["shell"]).format(**state)
     default_auto.update(conf["auto"])
     compute = default_auto
+    print(compute.keys())
     for values in paras:
         context = {k:v for k,v in zip(key_it,values)}
         state.update(context)
@@ -202,6 +207,9 @@ def start(force=False):
         # read cfg from .cfg, guess from shell, if exists
         cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd.format(**state))
         for cfg in cfgs:
+            if not os.path.exists(cfg):
+                print("%s not found. You may use meta to auto generate."%cfg)
+                return
             cfgname = os.path.basename(cfg).split('.')[0]
             if (cfgname.split('_')[0]) == (state['$inname'].split('_')[0]):
                 state['meta'][state['input']] = readcfg(cfg)
