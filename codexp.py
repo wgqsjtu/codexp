@@ -43,13 +43,13 @@ conf_pro = {
         "--input {input} --fps 25 --input-res 3840x2160",
         "--output {output}.bin",
         "--psnr --ssim --csv {output}.csv --csv-log-level 2",
-        " -f 250 {$mode} {para}"
+        " -f 250 {$mode}"
     ]
 }
 
 default_auto = {
-    "$inname": "os.path.basename(context['input']).split('.')[0]",
-    "$modename": "context['$mode']"
+    "$inname": "os.path.basename(state['input']).split('.')[0]",
+    "$modename": "state['$mode'].replace('$','')"
 }
 
 def calcAllFrames(state):
@@ -110,6 +110,15 @@ def readyuv420(filename, bitdepth, W, H):
 def getlatestjob():
     jobs = sorted(glob.glob("job*.json"))
     return jobs[-1] if jobs else ""
+
+def readcfg(fn):
+    meta = {}
+    with open(fn, "r") as f:
+        for line in f:
+            k,v = line.replace(':',' ').split()
+            meta[k] = v
+    return meta
+
 
 
 def init(template="conf_win_x265"):
@@ -186,9 +195,17 @@ def start(force=False):
         context = {k:v for k,v in zip(key_it,values)}
         state.update(context)
         
+        # compute $inname, $modename, if exists
         for k,v in compute.items():
             if k.startswith('$') and type(v) is str:
                 state[k] = eval(v)
+        # read cfg from .cfg, guess from shell, if exists
+        cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd.format(**state))
+        for cfg in cfgs:
+            cfgname = os.path.basename(cfg).split('.')[0]
+            if (cfgname.split('_')[0]) == (state['$inname'].split('_')[0]):
+                state['meta'][state['input']] = readcfg(cfg)
+
 
         if '$mode' in key_it:
             key = state['$mode']
@@ -204,19 +221,16 @@ def start(force=False):
     
     conf["tasks"] = tasks
     saveconf(conf)
-    print("[task+%3d] generated." % len(tasks))
+    print("[task+%3d] Tasks generated." % len(tasks))
 
 
 def meta():
     conf = loadconf()
     
-   
     for file in conf['meta']:
-        
         filename = os.path.basename(file)
         meta = conf["auto"]["$meta"].copy()
 
-        # from filename
         for item in filename.split("_"):
             if re.match(r"^[0-9]*x[0-9]*$", item):
                 meta["SourceWidth"], meta["SourceHeight"] = item.split("x")
@@ -235,7 +249,6 @@ def meta():
             else:
                 new_meta[key] = value
         conf["meta"][file] = new_meta
-            
 
         cfg = file.replace(".yuv", ".cfg")
         with open(cfg, "w") as autocfg:
@@ -245,46 +258,6 @@ def meta():
     saveconf(conf)
     print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
 
-
-def tasks():
-    conf = loadconf()
-    print('\n---Generate shell script.---')
-    seqpath = conf["path"]["seqpath"]
-    meta = conf["meta"]
-
-    conf["tasks"] = {}
-    for count, exp in enumerate(conf["exps"]):
-        print("# exp%02d: %s" % (count, exp["title"]))
-        for group in exp["groups"]:
-            gitem, mode, *paras = group.split()
-            items = glob.glob(os.path.join(seqpath,gitem))
-            
-            count = 0
-            for item in items:
-                inname = item.split('/')[-1].split(".")[0]
-                nframes = int(meta[item]["FramesToBeEncoded"])
-                for para in paras:
-                    if mode == "RATE":
-                        mode_cmd = "--RateControl=1 --TargetBitrate={}000".format(para)
-                    elif mode == "QP":
-                        mode_cmd = "--QP={}".format(para)
-                    elif mode == "QPIF":
-                        # QPIF 32.7 -> QP32 qpif0.3*nframes
-                        para = float(para)
-                        qp = int(para)
-                        qpif = int((qp + 1 - para)*nframes)
-                        mode_cmd = "--QP={} --QPIncrementFrame={}".format(qp, qpif)
-
-                    outname = exp["outname"].format(inname=inname,mode=mode,para=para)
-                    shell = ' '.join(conf["shell"]).format(inname=inname, \
-                            outname=outname, mode_cmd=mode_cmd, **conf["path"])
-
-                    log = shell.split()[-1]
-                    conf["tasks"][log] = {"status": "0/%d"%nframes, "shell": shell}
-                    count = count+1
-            
-            print("[task+%3d] %s" % (count,group))
-    saveconf(conf)
 
 def run(core=4):
     try:
