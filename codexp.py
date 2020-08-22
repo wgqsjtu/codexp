@@ -11,16 +11,16 @@ import time
 base_url = 'http://127.0.0.1:42024' # Set destination URL here
 
 conf_pro = {
-    "variable": {
+    "once": {
         "base": "/home/faymek/codexp",
         "inpath": "{base}/seq",
         "output": "{base}/result/{$inname}_{$modename}_{para}"
     },
-    "iterate": [
+    "iter": [
         "input | $mode | para",
         "{inpath}/*.yuv | QP | 27,32,37,42"
     ],
-    "auto": {
+    "each": {
         "$inname": "os.path.basename(state['input']).split('.')[0]",
         "$modename": "state['$mode'].replace('$','')",
         "$mode": {
@@ -48,7 +48,7 @@ conf_pro = {
     ]
 }
 
-default_auto = {
+default_sys1 = {
     "$inname": "os.path.basename(state['input']).split('.')[0]",
     "$modename": "state['$mode'].replace('$','')"
 }
@@ -81,7 +81,7 @@ def loadconf(fn=None):
     if not fn:
         fn = getlatestjob() 
     if not os.path.exists(fn):
-        print("The Job doesn't exist. Use init.")
+        print("The Job doesn't exist. Use new.")
         exit(0)
     with open(fn, "r") as f:
         conf = json.load(f)
@@ -122,7 +122,7 @@ def readcfg(fn):
 
 
 
-def init(template="conf_win_x265"):
+def new(template="conf_win_x265"):
     lastjob = getlatestjob().split('.')[0]
     idx = int(lastjob[3:]) + 1 if lastjob else 1  # get next job id
     curjob = "job%03d.json"%idx
@@ -134,25 +134,43 @@ def init(template="conf_win_x265"):
 def start(force=False):
     conf = loadconf()
 
-    # get {var} completed except key_tofill.
-    # -  key_auto: {$var} are system preserved to be computed.
-    # -  key_it: iterate keys are kept to be filled by paras.
-    key_auto = ['$inname', '$mode', '$meta', '$modename', '$timestamp', '$cfgname']
+    key_sys0 = ['$mode', '$meta']
+    # TODO: default sys key, peform simple func
+    # key_sys1 = ['$inname', '$modename']
+
+    # get all {$var} in key_exec, include key_iter
+    key_exec = key_sys0
+    key_once_exec = []
+    key_once_str = []
+    for key in conf["once"].keys():
+        if "$" in key:
+            key_once_exec.append(key)
+        else:
+            key_once_str.append(key)
+    key_exec.extend(key_once_exec)
+    for key in conf["each"].keys():
+        if "$" in key:
+            key_exec.append(key)
     
     it_sheet = []
-    for v in conf["iterate"]:
+    for v in conf["iter"]:
         it_sheet.append( v.replace(' ', '').split('|') )
-    key_it = it_sheet[0]
+    key_iter = it_sheet[0]
+    key_exec.extend(key_iter)
 
-    state = {k:"{%s}"%k for k in key_it+key_auto} # keep the same after format
-    state.update(conf["variable"])
+    state = {k:"{%s}"%k for k in key_exec} # keep the same after format
+    state.update(conf["once"])
 
-    for k, v in conf["variable"].items():
+    for key in key_once_exec:
+        state[key] = eval(conf["once"][key])
+
+    for key in key_once_str:
+        v = conf["once"][key]
         t = v.format(**state)
         if '\\' in v or '/' in v:
             t = getabspath(t)
             os.makedirs(os.path.dirname(t), exist_ok=True)
-        state[k] = t
+        state[key] = t
     
     # get sheet(2D) -> table(3D)
     it_table = [] # 3D array
@@ -181,7 +199,7 @@ def start(force=False):
     if len(paras) == 0:
         print("Maybe the wrong file glob.")
 
-    # get meta information
+    # get meta, get files list
     if 'meta' not in conf or len(conf['meta'])==0:
         meta = []
         for p in it_table:
@@ -193,29 +211,40 @@ def start(force=False):
     # get tasks iterately by using it_dict
     tasks = {}
     cmd = ' '.join(conf["shell"]).format(**state)
-    default_auto.update(conf["auto"])
-    compute = default_auto
-    print(compute.keys())
+    compute = conf["each"]
     for values in paras:
-        context = {k:v for k,v in zip(key_it,values)}
+        context = {k:v for k,v in zip(key_iter,values)}
         state.update(context)
         
-        # compute $inname, $modename, if exists
+        # compute {$each}
+        
         for k,v in compute.items():
             if k.startswith('$') and type(v) is str:
                 state[k] = eval(v)
-        # read cfg from .cfg, guess from shell, if exists
-        cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd.format(**state))
-        for cfg in cfgs:
+        
+        # regxp cmd to get options
+        cmd_tmp = cmd.format(**state)
+        opt_cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd_tmp)
+        opt_frames = re.findall(r"-f +(\d+) +", cmd_tmp)
+
+        # get meta, guess -c **/*.cfg
+        for cfg in opt_cfgs:
             if not os.path.exists(cfg):
-                print("%s not found. You may use meta to auto generate."%cfg)
+                print("%s not found. You may use meta to parse filename."%cfg)
                 return
             cfgname = os.path.basename(cfg).split('.')[0]
             if (cfgname.split('_')[0]) == (state['$inname'].split('_')[0]):
                 state['meta'][state['input']] = readcfg(cfg)
 
+        # get nframes
+        nframes = "0"
+        if len(opt_frames) > 0:
+            nframes = opt_frames[-1]
+        else:
+            nframes = conf['meta'][state['input']].get('FramesToBeEncoded', '0')
 
-        if '$mode' in key_it:
+        # process sys0.mode
+        if '$mode' in key_iter:
             key = state['$mode']
             value = compute['$mode'][key]
             if "$" in key:
@@ -225,7 +254,7 @@ def start(force=False):
             
         shell = cmd.format(**state)
         output = state["output"].format(**state)
-        tasks[output] = {"status": "0", "shell": shell}
+        tasks[output] = {"status": "0/%s"%nframes, "shell": shell}
     
     conf["tasks"] = tasks
     saveconf(conf)
@@ -237,7 +266,7 @@ def meta():
     
     for file in conf['meta']:
         filename = os.path.basename(file)
-        meta = conf["auto"]["$meta"].copy()
+        meta = conf["each"]["$meta"].copy()
 
         for item in filename.split("_"):
             if re.match(r"^[0-9]*x[0-9]*$", item):
@@ -320,13 +349,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Media Encoding Experiment Manager. Copyright @ 2016-2020')
     parser.add_argument(
-        "verb", choices=['start', 'init', 'meta', 'run', 'show'])
+        "verb", choices=['start', 'new', 'meta', 'run', 'show'])
     parser.add_argument("--force", action='store_true', default=False,
-                        help="init force overwrite experiments.json")
+                        help="new force overwrite experiments.json")
     parser.add_argument("--core", type=int, default=4,
                         help="run with n concurrent process")
     args = parser.parse_args()
-    dict_func = {'init': init, 'start': start,
+    dict_func = {'new': new, 'start': start,
                  'meta': meta, 'run': run, 'show':show}
     if args.verb == 'start':
         start(args.force)

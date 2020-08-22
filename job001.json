@@ -1,26 +1,92 @@
 {
-    "variable": {
+    "once": {
         "exe_name": "CUBayeP",
-        "base": "~/HM",
-        "inpath": "/home/medialab/workspace/HDD/HMSeq",
+        "base": "~/codexp",
+        "inpath": "~/codexp/seq",
+        "$timestamp": "time.strftime('%y_%m_%d_%H_%M_%S', time.localtime(time.time()))",
         "LocBinfiles": "{base}/result/{$timestamp}_{exe_name}",
         "output": "{$inname}_{para}"
     },
-    "iterate": [
-        "input | mode | para",
-        "{inpath}/**/*.yuv | QP | 22,27,32,37"
+    "iter": [
+        "input | para",
+        "{inpath}/**/*.yuv | 22,27,32,37"
     ],
-    "auto": {
+    "each": {
         "$inname": "os.path.basename(state['input']).split('.')[0]",
         "$cfgname": "os.path.basename(state['input']).split('.')[0].split('_')[0]",
-        "$timestamp": "time.strftime('%y_%m_%d_%H_%M_%S', time.localtime(time.time()))"
+        "$meta": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "$FramesToBeEncoded": "str(calcAllFrames(state))",
+            "$IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
+            "Level": "3.1"
+        }
     },
     "shell": [
-        "{base}/exe/{exe_name} -c {base}/cfg/encoder_intra_main.cfg",
-        "-c {base}/cfg/per-sequence/{$cfgname}.cfg",
+        "{base}/exe/{exe_name}",
+        "-c {base}/seq/{$cfgname}.cfg",
         "--InputFile={input} --BitstreamFile={LocBinfiles}/yuvbin/{output}_{exe_name}.hevc",
         "--QP={para}",
         "> {LocBinfiles}/logs/{output}.log",
         " -f 10"
-    ]
+    ],
+    "meta": {
+        "/home/faymek/codexp/seq/040.yuv": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "300",
+            "IntraPeriod": "32",
+            "Level": "3.1"
+        },
+        "/home/faymek/codexp/seq/039.yuv": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "300",
+            "IntraPeriod": "32",
+            "Level": "3.1"
+        }
+    },
+    "tasks": {
+        "039_22": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_22_CUBayeP.hevc --QP=22 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_22.log  -f 10"
+        },
+        "039_27": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_27_CUBayeP.hevc --QP=27 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_27.log  -f 10"
+        },
+        "039_32": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_32_CUBayeP.hevc --QP=32 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_32.log  -f 10"
+        },
+        "039_37": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_37_CUBayeP.hevc --QP=37 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_37.log  -f 10"
+        },
+        "040_22": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_22_CUBayeP.hevc --QP=22 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_22.log  -f 10"
+        },
+        "040_27": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_27_CUBayeP.hevc --QP=27 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_27.log  -f 10"
+        },
+        "040_32": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_32_CUBayeP.hevc --QP=32 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_32.log  -f 10"
+        },
+        "040_37": {
+            "status": "0/300",
+            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_37_CUBayeP.hevc --QP=37 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_37.log  -f 10"
+        }
+    }
 }

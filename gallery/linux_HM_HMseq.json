@@ -1,0 +1,26 @@
+{
+    "once": {
+        "exe_name": "CUBayeP",
+        "base": "~/HM",
+        "inpath": "/home/medialab/workspace/HDD/HMSeq",
+        "$timestamp": "time.strftime('%y_%m_%d_%H_%M_%S', time.localtime(time.time()))",
+        "LocBinfiles": "{base}/result/{$timestamp}_{exe_name}",
+        "output": "{$inname}_{para}"
+    },
+    "iter": [
+        "input | mode | para",
+        "{inpath}/**/*.yuv | QP | 22,27,32,37"
+    ],
+    "each": {
+        "$inname": "os.path.basename(state['input']).split('.')[0]",
+        "$cfgname": "os.path.basename(state['input']).split('.')[0].split('_')[0]"
+    },
+    "shell": [
+        "{base}/exe/{exe_name} -c {base}/cfg/encoder_intra_main.cfg",
+        "-c {base}/cfg/per-sequence/{$cfgname}.cfg",
+        "--InputFile={input} --BitstreamFile={LocBinfiles}/yuvbin/{output}_{exe_name}.hevc",
+        "--QP={para}",
+        "> {LocBinfiles}/logs/{output}.log",
+        " -f 10"
+    ]
+}
