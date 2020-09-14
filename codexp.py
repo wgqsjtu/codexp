@@ -191,7 +191,7 @@ def start(force=False):
     # 1,2|3,4,5|6|7,8 -> 1367,1368,1467,1468,...
     paras = []
     for p in it_table:
-        tuples = ','.join(["t%d"%t for t in range(len(p))])
+        tuples = ','.join(["t%d"%t for t in range(len(p))])+','
         fors = ' '.join(['for t{0} in p[{0}]'.format(t) for t in range(len(p))])
         trick = "[({}) {}]".format(tuples,fors)
         paras.extend(eval(trick,{"p":p}))
@@ -206,23 +206,28 @@ def start(force=False):
             meta.extend(p[0])
         conf['meta'] = {k:{} for k in list(set(meta))}
         saveconf(conf)
-    state['meta'] = conf['meta']
+    #state['meta'] = conf['meta']
 
     # get tasks iterately by using it_dict
     tasks = {}
-    cmd = ' '.join(conf["shell"]).format(**state)
+    cmd = ' '.join(conf["shell"])
     compute = conf["each"]
     for values in paras:
         context = {k:v for k,v in zip(key_iter,values)}
         state.update(context)
+        meta = conf['meta'][state['input']]
+        state.update(meta)
         
         # compute {$each}
-        
         for k,v in compute.items():
-            if k.startswith('$') and type(v) is str:
-                state[k] = eval(v)
+            if type(v) is str:
+                if k.startswith('$'):
+                    state[k] = eval(v)
+                else:
+                    state[k] = v.format(**state)
         
         # regxp cmd to get options
+        #print(state)
         cmd_tmp = cmd.format(**state)
         opt_cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd_tmp)
         opt_frames = re.findall(r"-f +(\d+) +", cmd_tmp)
@@ -234,7 +239,8 @@ def start(force=False):
                 return
             cfgname = os.path.basename(cfg).split('.')[0]
             if (cfgname.split('_')[0]) == (state['$inname'].split('_')[0]):
-                state['meta'][state['input']] = readcfg(cfg)
+                state['meta'] = readcfg(cfg)
+                conf['meta'][state['input']] = state['meta']
 
         # get nframes
         nframes = "0"
@@ -267,8 +273,8 @@ def meta():
     for file in conf['meta']:
         filename = os.path.basename(file)
         meta = conf["each"]["$meta"].copy()
-
-        for item in filename.split("_"):
+        items = filename[:-4].split("_")
+        for item in items:
             if re.match(r"^[0-9]*x[0-9]*$", item):
                 meta["SourceWidth"], meta["SourceHeight"] = item.split("x")
             elif re.match(r"^[0-9]*fps$", item):
@@ -277,6 +283,10 @@ def meta():
                 meta["InputBitDepth"] = item.split("bit")[0]
             elif item in ["444", "440", "422", "411", "420", "410", "311"]:
                 meta["InputChromaFormat"] = item
+            elif re.match(r"^[0-9]*$", item):
+                meta["FrameRate"] = item
+            else:
+                print(item)
         
         state = {'input':file,'meta':{file:meta}}
         new_meta = {}
@@ -299,8 +309,8 @@ def meta():
 def run(core=4):
     try:
         print(get("/id"))
-        full_path = os.path.abspath("experiments.json")
-        pf = {'fpath':full_path,'core':core}
+        fn = getlatestjob()
+        pf = {'fpath':fn,'core':core}
         print(post("/add", pf))
     except:
         print("Server Not Running. Try python3 server.py")
