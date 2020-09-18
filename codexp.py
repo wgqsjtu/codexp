@@ -8,6 +8,19 @@ import argparse
 import glob
 import time
 
+from string import Formatter
+class SafeFormatter(Formatter):
+    def get_value(self, key, args, kwargs):
+        if key not in kwargs:
+            return "{%s}"%key
+        elif '$' in key:
+            pass
+        else:
+            return kwargs[key]
+            
+
+form = SafeFormatter()
+
 base_url = 'http://127.0.0.1:42024' # Set destination URL here
 
 conf_pro = {
@@ -210,7 +223,8 @@ def start(force=False):
 
     # get tasks iterately by using it_dict
     tasks = {}
-    cmd = ' '.join(conf["shell"])
+    cmd = form.format(' '.join(conf["shell"]), **state)
+    print(cmd)
     compute = conf["each"]
     for values in paras:
         context = {k:v for k,v in zip(key_iter,values)}
@@ -227,7 +241,6 @@ def start(force=False):
                     state[k] = v.format(**state)
         
         # regxp cmd to get options
-        #print(state)
         cmd_tmp = cmd.format(**state)
         opt_cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd_tmp)
         opt_frames = re.findall(r"-f +(\d+) +", cmd_tmp)
@@ -257,7 +270,7 @@ def start(force=False):
                 state['$mode'] = eval(value)
             else:
                 state['$mode'] = value.format(**state)
-            
+        
         shell = cmd.format(**state)
         output = state["output"].format(**state)
         tasks[output] = {"status": "0/%s"%nframes, "shell": shell}
@@ -297,10 +310,11 @@ def meta():
                 new_meta[key] = value
         conf["meta"][file] = new_meta
 
-        cfg = file.replace(".yuv", ".cfg")
-        with open(cfg, "w") as autocfg:
-            for key, value in new_meta.items():
-                autocfg.write('{0:30}: {1}\n'.format(key, value))
+        if file.endswith('.yuv'):
+            cfg = file.replace(".yuv", ".cfg")
+            with open(cfg, "w") as autocfg:
+                for key, value in new_meta.items():
+                    autocfg.write('{0:30}: {1}\n'.format(key, value))
     
     saveconf(conf)
     print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
