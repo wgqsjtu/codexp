@@ -144,6 +144,44 @@ def new(template="conf_win_x265"):
     print("[ok] %s newly created."%curjob)
 
 
+def meta_fn():
+    conf = loadconf()
+    
+    for file in conf['meta']:
+        filename = os.path.basename(file)
+        meta = conf["each"]["$meta"].copy()
+        items = filename[:-4].split("_")[1:]
+        for item in items:
+            if re.match(r"^[0-9]*x[0-9]*$", item):
+                meta["SourceWidth"], meta["SourceHeight"] = item.split("x")
+            elif re.match(r"^[0-9]*fps$", item):
+                meta["FrameRate"] = item.split("fps")[0]
+            elif re.match(r"^[0-9]*bit", item):
+                meta["InputBitDepth"] = item.split("bit")[0]
+            elif item in ["444", "440", "422", "411", "420", "410", "311"]:
+                meta["InputChromaFormat"] = item
+            elif re.match(r"^[0-9]*$", item):
+                meta["FrameRate"] = item
+        
+        state = {'input':file,'meta':{file:meta}}  # using for eval context
+        new_meta = {}
+        for key,value in meta.items():
+            if "$" in key:
+                new_meta[key[1:]] = str(eval(value))
+            else:
+                new_meta[key] = value
+        conf["meta"][file] = new_meta
+
+        if file.endswith('.yuv'):
+            cfg = file.replace(".yuv", ".cfg")
+            with open(cfg, "w") as autocfg:
+                for key, value in new_meta.items():
+                    autocfg.write('{0:30}: {1}\n'.format(key, value))
+    
+    saveconf(conf)
+    print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
+
+
 def start(force=False):
     conf = loadconf()
 
@@ -214,12 +252,13 @@ def start(force=False):
 
     # get meta, get files list
     if 'meta' not in conf or len(conf['meta'])==0:
-        meta = []
+        files = []
         for p in it_table:
-            meta.extend(p[0])
-        conf['meta'] = {k:{} for k in list(set(meta))}
+            files.extend(p[0])
+        conf['meta'] = {k:{} for k in list(set(files))}
         saveconf(conf)
-    #state['meta'] = conf['meta']
+        meta_fn()  # from filename
+        conf = loadconf()
 
     # get tasks iterately by using it_dict
     tasks = {}
@@ -231,6 +270,7 @@ def start(force=False):
         state.update(context)
         meta = conf['meta'][state['input']]
         state.update(meta)
+        #print(state)
         
         # compute {$each}
         for k,v in compute.items():
@@ -278,46 +318,6 @@ def start(force=False):
     conf["tasks"] = tasks
     saveconf(conf)
     print("[task+%3d] Tasks generated." % len(tasks))
-
-
-def meta():
-    conf = loadconf()
-    
-    for file in conf['meta']:
-        filename = os.path.basename(file)
-        meta = conf["each"]["$meta"].copy()
-        items = filename[:-4].split("_")
-        for item in items:
-            if re.match(r"^[0-9]*x[0-9]*$", item):
-                meta["SourceWidth"], meta["SourceHeight"] = item.split("x")
-            elif re.match(r"^[0-9]*fps$", item):
-                meta["FrameRate"] = item.split("fps")[0]
-            elif re.match(r"^[0-9]*bit", item):
-                meta["InputBitDepth"] = item.split("bit")[0]
-            elif item in ["444", "440", "422", "411", "420", "410", "311"]:
-                meta["InputChromaFormat"] = item
-            elif re.match(r"^[0-9]*$", item):
-                meta["FrameRate"] = item
-            else:
-                print(item)
-        
-        state = {'input':file,'meta':{file:meta}}
-        new_meta = {}
-        for key,value in meta.items():
-            if "$" in key:
-                new_meta[key[1:]] = str(eval(value))
-            else:
-                new_meta[key] = value
-        conf["meta"][file] = new_meta
-
-        if file.endswith('.yuv'):
-            cfg = file.replace(".yuv", ".cfg")
-            with open(cfg, "w") as autocfg:
-                for key, value in new_meta.items():
-                    autocfg.write('{0:30}: {1}\n'.format(key, value))
-    
-    saveconf(conf)
-    print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
 
 
 def run(core=4):
@@ -380,7 +380,7 @@ if __name__ == '__main__':
                         help="run with n concurrent process")
     args = parser.parse_args()
     dict_func = {'new': new, 'start': start,
-                 'meta': meta, 'run': run, 'show':show}
+                 'meta': meta_fn, 'run': run, 'show':show}
     if args.verb == 'start':
         start(args.force)
     elif args.verb == 'run':

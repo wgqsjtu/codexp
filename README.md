@@ -6,9 +6,9 @@
 
 - new: 创建实验配置`jobxxx.json`
 - start：根据配置，补充生成tasks，获得yuv信息，编码帧数
+- meta: 推断输入文件的基本信息，主要用来维护yuv
 - run：将实验配置提交到服务器
-- status：查看运行情况
-- analyze：分析运行结果，生成表格
+- show：查看运行情况，分析运行结果，生成表格
 - clean：清除某次任务
 
 
@@ -84,6 +84,9 @@ python codexp.py start test.json
 
 key_sys0为保留功能键,如`$mode`，`$meta`，实现较为复杂的功能。（未实现）key_sys1为默认功能键，如`$inname`获得输入文件`/seq/abc.yuv`的名称`abc`，这类含义是默认定义的，但是也可以被用户重写。需要检测值中所有涉及的键，现有模式是运行所有$键。state是状态字典，不断更新来填充字符串中的字段。
 
+新：引入safe_subsitude。
+TODO：给出未解析的字段
+
 1. 占位：key_sys0, key_sys1, key_iter, key_each; state: 占位 + once 
 2. 执行{$once}, 更新state, 填充{once}, 更新state, 
 3. 获取iter_paras
@@ -100,6 +103,9 @@ key_sys0为保留功能键,如`$mode`，`$meta`，实现较为复杂的功能。
 - 选）从{meta}中获得
 - 选）推断shell中的-f n选项
 
+## meta
+
+从文件名推断输入文件的基本信息。
 
 ## run
 
@@ -115,6 +121,7 @@ key_sys0为保留功能键,如`$mode`，`$meta`，实现较为复杂的功能。
 
 检查task中的任务status，给出运行情况。如果任务全为success，则统计得出结果.csv。管理历史运行数据。参数有：
 
+- `--type hm|vtm|hpm|x265|uavs3e`: 根据编码器类型解析log，或自定义数据解析方法。
 - `--sort name|time`：按时间或文件名顺序排列结果。
 - `--grep string`：检索包含string的结果。
 
