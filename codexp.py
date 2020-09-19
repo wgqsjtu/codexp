@@ -7,6 +7,7 @@ import json
 import argparse
 import glob
 import time
+from adapter import *
 
 from string import Formatter
 class SafeFormatter(Formatter):
@@ -132,7 +133,6 @@ def readcfg(fn):
             k,v = line.replace(':',' ').split()
             meta[k] = v
     return meta
-
 
 
 def new(template="conf_win_x265"):
@@ -329,6 +329,7 @@ def run(core=4):
     except:
         print("Server Not Running. Try python3 server.py")
 
+
 def show():
     history = loadconf(fn="history.json")
     recent = sorted(history.keys(),reverse=True)
@@ -338,32 +339,26 @@ def show():
     print("EXP @",recent[0])
     
     # read log
+    fnfix = "%s"
     results = []
+    sample = fnfix%next(iter(tasks))
+    enctype = log_getEnctype(sample)
+
     for tkey, tvalue in tasks.items():
-        with open(tkey, "r") as f:
-            lines = list(f.readlines())
-            nline = len(lines)
-            cur, total = tvalue["status"].split('/')
-            cur, total = int(cur), int(total)
-            if nline < 10:
-                cur = 0
-                status = "wait"
-            else:
-                if lines[-2] and lines[-2].split()[0] == "finished":
-                    cur = total
-                    status = "finish"
-                    items = lines[-4].split()
-                    results.append([tkey, items[2], items[6]])
-                else:
-                    status = "excute"
-                    cur = min(nline-10,total)
-        tvalue["status"] = "%3d/%3d"%(cur, total)
+        status = "wait"
+        cur, total = tvalue["status"].split('/')
+        fn = fnfix%tkey
+        if os.path.exists(fn):
+            status, cur, result = log_adapter(fn, enctype)
+            if result:
+                results.append(result)
+        tvalue["status"] = "%3d/%3d"%(int(cur), int(total))
         count[status] += 1
         print("[{}] {}".format(tvalue["status"],tkey.split("/")[-1]))
     print('Total %d tasks, %d wait, %d excute, %d finish.' %
           (len(tasks), count["wait"], count["excute"], count["finish"]))
     with open("result.csv","w") as f:
-        f.write("file,bitrate,YUV-PSNR\n")
+        f.write(",".join(LOG_KEYS[enctype])+"\n")
         for result in results:
             f.write(','.join(result)+'\n')
     print("result.csv generated.")
@@ -388,4 +383,4 @@ if __name__ == '__main__':
     else:
         dict_func[args.verb]()
 
-# %%
+

@@ -1,5 +1,6 @@
 {
     "once": {
+        "title": "ffmpeg png2yuv",
         "base": "~/codexp",
         "inpath": "~/ctc10",
         "output": "~/ctcyuv/{$inname}"

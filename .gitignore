@@ -2,3 +2,4 @@
 *.yuv
 result/
 seq/
+result.csv
