@@ -12,6 +12,18 @@
 - clean：清除某次任务
 
 
+## timeline
+
+[todo] Pipeline
+[todo] Job Template
+[200919] Adapter to diffenent codec
+[200822] Grammer newly designed
+
+TODO:
+- show pid
+- gallery and job template
+
+
 ## new
 
 生成序号自增的配置文件，例如`job001.json`，用户编辑文件，之后的命令将自动使用最新配置文件。gallery中提供了系列常用配置作为模板，也可以将自定义配置移入其中。new命令会自动匹配对应的文件，生成新的job，默认模板为`conf_pro.json`。
