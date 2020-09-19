@@ -1,92 +1,1289 @@
 {
     "once": {
-        "exe_name": "CUBayeP",
+        "title": "ffmpeg png2yuv",
         "base": "~/codexp",
-        "inpath": "~/codexp/seq",
-        "$timestamp": "time.strftime('%y_%m_%d_%H_%M_%S', time.localtime(time.time()))",
-        "LocBinfiles": "{base}/result/{$timestamp}_{exe_name}",
-        "output": "{$inname}_{para}"
+        "inpath": "~/test/ctcpng",
+        "output": "~/test/ctcyuv/{$inname}"
     },
     "iter": [
-        "input | para",
-        "{inpath}/**/*.yuv | 22,27,32,37"
+        "input",
+        "{inpath}/*.png"
     ],
     "each": {
         "$inname": "os.path.basename(state['input']).split('.')[0]",
-        "$cfgname": "os.path.basename(state['input']).split('.')[0].split('_')[0]",
+        "$modename": "state['$mode'].replace('$','')",
+        "video_size": "{SourceWidth}x{SourceHeight}",
+        "$bit_depth": "'' if meta['InputBitDepth'] == '8' else '10le'",
+        "pixel_format": "yuv{InputChromaFormat}p{$bit_depth}",
+        "$mode": {
+            "QP": "-q {para}",
+            "RATE": "--RateControl=1 --TargetBitrate={para}000",
+            "$QPIF": "modeQPIF(state)"
+        },
         "$meta": {
             "InputBitDepth": "8",
             "InputChromaFormat": "420",
             "FrameRate": "30",
             "SourceWidth": "1920",
             "SourceHeight": "1080",
-            "$FramesToBeEncoded": "str(calcAllFrames(state))",
-            "$IntraPeriod": "'32' if meta['FrameRate'] == '30' else '64'",
-            "Level": "3.1"
+            "$FramesToBeEncoded": "str(calcAllFrames(state))"
         }
     },
     "shell": [
-        "{base}/exe/{exe_name}",
-        "-c {base}/seq/{$cfgname}.cfg",
-        "--InputFile={input} --BitstreamFile={LocBinfiles}/yuvbin/{output}_{exe_name}.hevc",
-        "--QP={para}",
-        "> {LocBinfiles}/logs/{output}.log",
-        " -f 10"
+        "ffmpeg ",
+        "-i {input} -pix_fmt {pixel_format}",
+        " {output}.yuv"
     ],
     "meta": {
-        "/home/faymek/codexp/seq/040.yuv": {
+        "/home/faymek/test/ctcpng/BQSquare_416x240_60_SR.png": {
             "InputBitDepth": "8",
             "InputChromaFormat": "420",
-            "FrameRate": "30",
-            "SourceWidth": "1920",
-            "SourceHeight": "1080",
-            "FramesToBeEncoded": "300",
-            "IntraPeriod": "32",
-            "Level": "3.1"
+            "FrameRate": "60",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
         },
-        "/home/faymek/codexp/seq/039.yuv": {
+        "/home/faymek/test/ctcpng/ArenaOfValor_1920x1080_60_8bit_420_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/CatRobot_3840x2160_60fps_10bit_420_jvet_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/SlideShow_1280x720_20_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "20",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/RitualDance_480x270_60fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/MarketPlace_480x270_60fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BQMall_208x120_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/DaylightRoad2_960x540_60fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/DaylightRoad2_3840x2160_60fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/MarketPlace_1920x1080_60fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/FoodMarket4_960x540_60fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/CampfireParty_960x540_30fps_10bit_420_jvet_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Cactus_1920x1080_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CampfireParty_960x540_30fps_10bit_420_jvet_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/KristenAndSara_320x180_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/FoodMarket4_960x540_60fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Johnny_1280x720_60_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballPass_104x60_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideShow_1280x720_20_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "20",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BQMall_208x120_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Johnny_1280x720_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQMall_832x480_60_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RaceHorsesC_832x480_30_SR.png": {
             "InputBitDepth": "8",
             "InputChromaFormat": "420",
             "FrameRate": "30",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RaceHorsesC_208x120_30_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/PartyScene_832x480_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/KristenAndSara_320x180_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideEditing_320x180_30_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideEditing_320x180_30_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CampfireParty_3840x2160_30fps_10bit_420_jvet_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/RaceHorsesC_832x480_30_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrillText_832x480_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/PartyScene_208x120_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BlowingBubbles_416x240_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/KristenAndSara_1280x720_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrillText_832x480_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RitualDance_480x270_60fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/RitualDance_1920x1080_60fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
             "SourceWidth": "1920",
             "SourceHeight": "1080",
-            "FramesToBeEncoded": "300",
-            "IntraPeriod": "32",
-            "Level": "3.1"
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/ParkRunning3_3840x2160_50fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrive_1920x1080_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/RaceHorses_416x240_30_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideShow_320x180_20_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "20",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Johnny_320x180_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQTerrace_480x270_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrillText_208x120_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrill_208x120_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BlowingBubbles_104x60_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/DaylightRoad2_960x540_60fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/PartyScene_832x480_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/KristenAndSara_1280x720_60_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/MarketPlace_1920x1080_60fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/DaylightRoad2_3840x2160_60fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/SlideEditing_1280x720_30_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/FourPeople_320x180_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/ArenaOfValor_1920x1080_60_8bit_420_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Cactus_1920x1080_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/FoodMarket4_3840x2160_60fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/ParkRunning3_960x540_50fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/FourPeople_1280x720_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballPass_416x240_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/MarketPlace_480x270_60fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/ParkRunning3_3840x2160_50fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballPass_104x60_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Cactus_480x270_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CatRobot_960x540_60fps_10bit_420_jvet_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BQSquare_416x240_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Johnny_320x180_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/FoodMarket4_3840x2160_60fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrillText_208x120_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BlowingBubbles_416x240_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQSquare_104x60_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/PartyScene_208x120_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CatRobot_960x540_60fps_10bit_420_jvet_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrill_208x120_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQSquare_104x60_60_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/ParkRunning3_960x540_50fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQTerrace_1920x1080_60_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/FourPeople_1280x720_60_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/FourPeople_320x180_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrill_832x480_50_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrive_1920x1080_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQMall_832x480_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Tango2_3840x2160_60fps_10bit_420_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Tango2_960x540_60fps_10bit_420_BL.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BlowingBubbles_104x60_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideShow_320x180_20_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "20",
+            "SourceWidth": "320",
+            "SourceHeight": "180",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballPass_416x240_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CatRobot_3840x2160_60fps_10bit_420_jvet_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BQTerrace_1920x1080_60_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BQTerrace_480x270_60_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RitualDance_1920x1080_60fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/RaceHorsesC_208x120_30_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "208",
+            "SourceHeight": "120",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/CampfireParty_3840x2160_30fps_10bit_420_jvet_GT.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrill_832x480_50_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "832",
+            "SourceHeight": "480",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Tango2_3840x2160_60fps_10bit_420_SR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "3840",
+            "SourceHeight": "2160",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrive_480x270_50_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RaceHorses_104x60_30_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/BasketballDrive_480x270_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/ArenaOfValor_480x270_60_8bit_420_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RaceHorses_104x60_30_BL.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "104",
+            "SourceHeight": "60",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/ArenaOfValor_480x270_60_8bit_420_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/RaceHorses_416x240_30_SR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "416",
+            "SourceHeight": "240",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/Cactus_480x270_50_LR.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "50",
+            "SourceWidth": "480",
+            "SourceHeight": "270",
+            "FramesToBeEncoded": "1"
+        },
+        "/home/faymek/test/ctcpng/SlideEditing_1280x720_30_GT.png": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1280",
+            "SourceHeight": "720",
+            "FramesToBeEncoded": "0"
+        },
+        "/home/faymek/test/ctcpng/Tango2_960x540_60fps_10bit_420_LR.png": {
+            "InputBitDepth": "10",
+            "InputChromaFormat": "420",
+            "FrameRate": "60",
+            "SourceWidth": "960",
+            "SourceHeight": "540",
+            "FramesToBeEncoded": "0"
         }
     },
     "tasks": {
-        "039_22": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_22_CUBayeP.hevc --QP=22 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_22.log  -f 10"
+        "/home/faymek/ctcyuv/ArenaOfValor_1920x1080_60_8bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ArenaOfValor_1920x1080_60_8bit_420_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/ArenaOfValor_1920x1080_60_8bit_420_GT.yuv"
         },
-        "039_27": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_27_CUBayeP.hevc --QP=27 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_27.log  -f 10"
+        "/home/faymek/ctcyuv/ArenaOfValor_1920x1080_60_8bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ArenaOfValor_1920x1080_60_8bit_420_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/ArenaOfValor_1920x1080_60_8bit_420_SR.yuv"
         },
-        "039_32": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_32_CUBayeP.hevc --QP=32 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_32.log  -f 10"
+        "/home/faymek/ctcyuv/ArenaOfValor_480x270_60_8bit_420_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ArenaOfValor_480x270_60_8bit_420_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/ArenaOfValor_480x270_60_8bit_420_BL.yuv"
         },
-        "039_37": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/039.cfg --InputFile=/home/faymek/codexp/seq/039.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/039_37_CUBayeP.hevc --QP=37 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/039_37.log  -f 10"
+        "/home/faymek/ctcyuv/ArenaOfValor_480x270_60_8bit_420_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ArenaOfValor_480x270_60_8bit_420_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/ArenaOfValor_480x270_60_8bit_420_LR.yuv"
         },
-        "040_22": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_22_CUBayeP.hevc --QP=22 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_22.log  -f 10"
+        "/home/faymek/ctcyuv/BQMall_208x120_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQMall_208x120_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQMall_208x120_60_BL.yuv"
         },
-        "040_27": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_27_CUBayeP.hevc --QP=27 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_27.log  -f 10"
+        "/home/faymek/ctcyuv/BQMall_208x120_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQMall_208x120_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQMall_208x120_60_LR.yuv"
         },
-        "040_32": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_32_CUBayeP.hevc --QP=32 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_32.log  -f 10"
+        "/home/faymek/ctcyuv/BQMall_832x480_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQMall_832x480_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQMall_832x480_60_GT.yuv"
         },
-        "040_37": {
-            "status": "0/300",
-            "shell": "/home/faymek/codexp/exe/CUBayeP -c /home/faymek/codexp/seq/040.cfg --InputFile=/home/faymek/codexp/seq/040.yuv --BitstreamFile=/home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/yuvbin/040_37_CUBayeP.hevc --QP=37 > /home/faymek/codexp/result/20_08_22_16_36_55_CUBayeP/logs/040_37.log  -f 10"
+        "/home/faymek/ctcyuv/BQMall_832x480_60_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQMall_832x480_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQMall_832x480_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BQSquare_104x60_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQSquare_104x60_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQSquare_104x60_60_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BQSquare_104x60_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQSquare_104x60_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQSquare_104x60_60_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BQSquare_416x240_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQSquare_416x240_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQSquare_416x240_60_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BQSquare_416x240_60_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQSquare_416x240_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQSquare_416x240_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BQTerrace_1920x1080_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQTerrace_1920x1080_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQTerrace_1920x1080_60_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BQTerrace_1920x1080_60_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQTerrace_1920x1080_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQTerrace_1920x1080_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BQTerrace_480x270_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQTerrace_480x270_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQTerrace_480x270_60_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BQTerrace_480x270_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BQTerrace_480x270_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BQTerrace_480x270_60_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrillText_208x120_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrillText_208x120_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrillText_208x120_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrillText_208x120_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrillText_208x120_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrillText_208x120_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrillText_832x480_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrillText_832x480_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrillText_832x480_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrillText_832x480_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrillText_832x480_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrillText_832x480_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrill_208x120_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrill_208x120_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrill_208x120_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrill_208x120_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrill_208x120_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrill_208x120_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrill_832x480_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrill_832x480_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrill_832x480_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrill_832x480_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrill_832x480_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrill_832x480_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrive_1920x1080_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrive_1920x1080_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrive_1920x1080_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrive_1920x1080_50_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrive_1920x1080_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrive_1920x1080_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrive_480x270_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrive_480x270_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrive_480x270_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballDrive_480x270_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballDrive_480x270_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballDrive_480x270_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballPass_104x60_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballPass_104x60_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballPass_104x60_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballPass_104x60_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballPass_104x60_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballPass_104x60_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballPass_416x240_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballPass_416x240_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballPass_416x240_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BasketballPass_416x240_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BasketballPass_416x240_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BasketballPass_416x240_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/BlowingBubbles_104x60_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BlowingBubbles_104x60_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BlowingBubbles_104x60_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/BlowingBubbles_104x60_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BlowingBubbles_104x60_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BlowingBubbles_104x60_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/BlowingBubbles_416x240_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BlowingBubbles_416x240_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BlowingBubbles_416x240_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/BlowingBubbles_416x240_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/BlowingBubbles_416x240_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/BlowingBubbles_416x240_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/Cactus_1920x1080_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Cactus_1920x1080_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Cactus_1920x1080_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/Cactus_1920x1080_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Cactus_1920x1080_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Cactus_1920x1080_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/Cactus_480x270_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Cactus_480x270_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Cactus_480x270_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/Cactus_480x270_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Cactus_480x270_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Cactus_480x270_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/CampfireParty_3840x2160_30fps_10bit_420_jvet_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CampfireParty_3840x2160_30fps_10bit_420_jvet_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CampfireParty_3840x2160_30fps_10bit_420_jvet_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/CampfireParty_3840x2160_30fps_10bit_420_jvet_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CampfireParty_3840x2160_30fps_10bit_420_jvet_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CampfireParty_3840x2160_30fps_10bit_420_jvet_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/CampfireParty_960x540_30fps_10bit_420_jvet_BL": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CampfireParty_960x540_30fps_10bit_420_jvet_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CampfireParty_960x540_30fps_10bit_420_jvet_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/CampfireParty_960x540_30fps_10bit_420_jvet_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CampfireParty_960x540_30fps_10bit_420_jvet_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CampfireParty_960x540_30fps_10bit_420_jvet_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/CatRobot_3840x2160_60fps_10bit_420_jvet_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CatRobot_3840x2160_60fps_10bit_420_jvet_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CatRobot_3840x2160_60fps_10bit_420_jvet_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/CatRobot_3840x2160_60fps_10bit_420_jvet_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CatRobot_3840x2160_60fps_10bit_420_jvet_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CatRobot_3840x2160_60fps_10bit_420_jvet_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/CatRobot_960x540_60fps_10bit_420_jvet_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CatRobot_960x540_60fps_10bit_420_jvet_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CatRobot_960x540_60fps_10bit_420_jvet_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/CatRobot_960x540_60fps_10bit_420_jvet_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/CatRobot_960x540_60fps_10bit_420_jvet_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/CatRobot_960x540_60fps_10bit_420_jvet_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/DaylightRoad2_3840x2160_60fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/DaylightRoad2_3840x2160_60fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/DaylightRoad2_3840x2160_60fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/DaylightRoad2_3840x2160_60fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/DaylightRoad2_3840x2160_60fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/DaylightRoad2_3840x2160_60fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/DaylightRoad2_960x540_60fps_10bit_420_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/DaylightRoad2_960x540_60fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/DaylightRoad2_960x540_60fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/DaylightRoad2_960x540_60fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/DaylightRoad2_960x540_60fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/DaylightRoad2_960x540_60fps_10bit_420_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/FoodMarket4_3840x2160_60fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FoodMarket4_3840x2160_60fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/FoodMarket4_3840x2160_60fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/FoodMarket4_3840x2160_60fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FoodMarket4_3840x2160_60fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/FoodMarket4_3840x2160_60fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/FoodMarket4_960x540_60fps_10bit_420_BL": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FoodMarket4_960x540_60fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/FoodMarket4_960x540_60fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/FoodMarket4_960x540_60fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FoodMarket4_960x540_60fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/FoodMarket4_960x540_60fps_10bit_420_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/FourPeople_1280x720_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FourPeople_1280x720_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/FourPeople_1280x720_60_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/FourPeople_1280x720_60_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FourPeople_1280x720_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/FourPeople_1280x720_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/FourPeople_320x180_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FourPeople_320x180_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/FourPeople_320x180_60_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/FourPeople_320x180_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/FourPeople_320x180_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/FourPeople_320x180_60_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/Johnny_1280x720_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Johnny_1280x720_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Johnny_1280x720_60_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/Johnny_1280x720_60_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Johnny_1280x720_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Johnny_1280x720_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/Johnny_320x180_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Johnny_320x180_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Johnny_320x180_60_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/Johnny_320x180_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Johnny_320x180_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/Johnny_320x180_60_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/KristenAndSara_1280x720_60_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/KristenAndSara_1280x720_60_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/KristenAndSara_1280x720_60_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/KristenAndSara_1280x720_60_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/KristenAndSara_1280x720_60_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/KristenAndSara_1280x720_60_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/KristenAndSara_320x180_60_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/KristenAndSara_320x180_60_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/KristenAndSara_320x180_60_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/KristenAndSara_320x180_60_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/KristenAndSara_320x180_60_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/KristenAndSara_320x180_60_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/MarketPlace_1920x1080_60fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/MarketPlace_1920x1080_60fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/MarketPlace_1920x1080_60fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/MarketPlace_1920x1080_60fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/MarketPlace_1920x1080_60fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/MarketPlace_1920x1080_60fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/MarketPlace_480x270_60fps_10bit_420_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/MarketPlace_480x270_60fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/MarketPlace_480x270_60fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/MarketPlace_480x270_60fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/MarketPlace_480x270_60fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/MarketPlace_480x270_60fps_10bit_420_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/ParkRunning3_3840x2160_50fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ParkRunning3_3840x2160_50fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/ParkRunning3_3840x2160_50fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/ParkRunning3_3840x2160_50fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ParkRunning3_3840x2160_50fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/ParkRunning3_3840x2160_50fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/ParkRunning3_960x540_50fps_10bit_420_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ParkRunning3_960x540_50fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/ParkRunning3_960x540_50fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/ParkRunning3_960x540_50fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/ParkRunning3_960x540_50fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/ParkRunning3_960x540_50fps_10bit_420_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/PartyScene_208x120_50_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/PartyScene_208x120_50_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/PartyScene_208x120_50_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/PartyScene_208x120_50_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/PartyScene_208x120_50_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/PartyScene_208x120_50_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/PartyScene_832x480_50_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/PartyScene_832x480_50_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/PartyScene_832x480_50_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/PartyScene_832x480_50_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/PartyScene_832x480_50_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/PartyScene_832x480_50_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorsesC_208x120_30_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorsesC_208x120_30_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorsesC_208x120_30_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorsesC_208x120_30_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorsesC_208x120_30_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorsesC_208x120_30_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorsesC_832x480_30_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorsesC_832x480_30_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorsesC_832x480_30_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorsesC_832x480_30_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorsesC_832x480_30_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorsesC_832x480_30_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorses_104x60_30_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorses_104x60_30_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorses_104x60_30_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorses_104x60_30_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorses_104x60_30_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorses_104x60_30_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorses_416x240_30_GT": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorses_416x240_30_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorses_416x240_30_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/RaceHorses_416x240_30_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RaceHorses_416x240_30_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/RaceHorses_416x240_30_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/RitualDance_1920x1080_60fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RitualDance_1920x1080_60fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/RitualDance_1920x1080_60fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/RitualDance_1920x1080_60fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RitualDance_1920x1080_60fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/RitualDance_1920x1080_60fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/RitualDance_480x270_60fps_10bit_420_BL": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RitualDance_480x270_60fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/RitualDance_480x270_60fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/RitualDance_480x270_60fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/RitualDance_480x270_60fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/RitualDance_480x270_60fps_10bit_420_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideEditing_1280x720_30_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideEditing_1280x720_30_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideEditing_1280x720_30_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideEditing_1280x720_30_SR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideEditing_1280x720_30_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideEditing_1280x720_30_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideEditing_320x180_30_BL": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideEditing_320x180_30_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideEditing_320x180_30_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideEditing_320x180_30_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideEditing_320x180_30_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideEditing_320x180_30_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideShow_1280x720_20_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideShow_1280x720_20_GT.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideShow_1280x720_20_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideShow_1280x720_20_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideShow_1280x720_20_SR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideShow_1280x720_20_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideShow_320x180_20_BL": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideShow_320x180_20_BL.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideShow_320x180_20_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/SlideShow_320x180_20_LR": {
+            "status": "0/1",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/SlideShow_320x180_20_LR.png -pix_fmt yuv420p  /home/faymek/ctcyuv/SlideShow_320x180_20_LR.yuv"
+        },
+        "/home/faymek/ctcyuv/Tango2_3840x2160_60fps_10bit_420_GT": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Tango2_3840x2160_60fps_10bit_420_GT.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/Tango2_3840x2160_60fps_10bit_420_GT.yuv"
+        },
+        "/home/faymek/ctcyuv/Tango2_3840x2160_60fps_10bit_420_SR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Tango2_3840x2160_60fps_10bit_420_SR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/Tango2_3840x2160_60fps_10bit_420_SR.yuv"
+        },
+        "/home/faymek/ctcyuv/Tango2_960x540_60fps_10bit_420_BL": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Tango2_960x540_60fps_10bit_420_BL.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/Tango2_960x540_60fps_10bit_420_BL.yuv"
+        },
+        "/home/faymek/ctcyuv/Tango2_960x540_60fps_10bit_420_LR": {
+            "status": "0/0",
+            "shell": "ffmpeg  -i /home/faymek/test/ctcpng/Tango2_960x540_60fps_10bit_420_LR.png -pix_fmt yuv420p10le  /home/faymek/ctcyuv/Tango2_960x540_60fps_10bit_420_LR.yuv"
         }
     }
 }

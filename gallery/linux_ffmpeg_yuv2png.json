@@ -1,5 +1,6 @@
 {
     "once": {
+        "title": "linux ffmpeg yuv2png",
         "base": "~/codexp",
         "inpath": "{base}/seq/HRyuv",
         "output": "{base}/result/{$inname}"

@@ -16,12 +16,14 @@
 
 [todo] Pipeline
 [todo] Job Template
+[todo] Server Enhance
 [200919] Adapter to diffenent codec
 [200822] Grammer newly designed
 
 TODO:
 - show pid
 - gallery and job template
+- local server mode & remote mode
 
 
 ## new

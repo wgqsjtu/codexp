@@ -1,0 +1,37 @@
+{
+    "once": {
+        "title": "ffmpeg png2yuv",
+        "base": "~/codexp",
+        "inpath": "~/test/ctcpng",
+        "output": "~/ctcyuv/{$inname}"
+    },
+    "iter": [
+        "input",
+        "{inpath}/*.png"
+    ],
+    "each": {
+        "$inname": "os.path.basename(state['input']).split('.')[0]",
+        "$modename": "state['$mode'].replace('$','')",
+        "video_size": "{SourceWidth}x{SourceHeight}",
+        "$bit_depth": "'' if meta['InputBitDepth'] == '8' else '10le'",
+        "pixel_format": "yuv{InputChromaFormat}p{$bit_depth}",
+        "$mode": {
+            "QP": "-q {para}",
+            "RATE": "--RateControl=1 --TargetBitrate={para}000",
+            "$QPIF": "modeQPIF(state)"
+        },
+        "$meta": {
+            "InputBitDepth": "8",
+            "InputChromaFormat": "420",
+            "FrameRate": "30",
+            "SourceWidth": "1920",
+            "SourceHeight": "1080",
+            "$FramesToBeEncoded": "str(calcAllFrames(state))"
+        }
+    },
+    "shell": [
+        "ffmpeg ",
+        "-i {input} -pix_fmt {pixel_format}",
+        " {output}.yuv"
+    ]
+}
