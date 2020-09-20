@@ -1,0 +1,64 @@
+Note: picture height in encoding process is padded to 1408 (input value 1404)
+HPM version : 8.0-ModAI3.0 -------------------------------------------------------------------------------
+< Configurations >
+	config file name     : C:\AVS3test\hpm-HPM-8.0-ModAI-3.0//0820test//encode_AI.cfg
+	profile                  : 0x32
+	width                    : 2040
+	height                   : 1408
+	FPS                      : 50
+	intra picture period     : 1
+	input bit depth          : 8
+	internal bit depth       : 10
+	QP                       : 37
+	frames                   : 1
+	hierarchical GOP         : disabled
+	Patch flag               : 0
+	sub_sample_ratio         : 1
+	delta_qp flag            : 0
+	qp_offset_cb             : 0
+	qp_offset_cr             : 0
+	qp_offset_adp            : 1
+	qp_offset_libpic         : -6
+	seq_ref2_lib_enable      : 0
+
+CU split CFG: 
+	ctu_size:        128
+	min_cu_size:     4
+	max_part_ratio:  8
+	max_split_times: 6
+	min_qt_size:     8
+	max_bt_size:     128
+	max_eqt_size:    64
+	max_dt_size:     64
+
+Tool CFG:
+DEBLOCK: 1, DEBLOCK_TYPE: 0, CROSS_PATCH_LP: 1, SAO: 0, ALF: 1, ESAO: 1, 
+AMVR: 1, HMVP_NUM: 8, HBVP_NUM: 12, AFFINE: 1, SMVD: 1, UMVE: 1, UMVE_ENH: 1, AWP: 1, AWP MVR: 1, ETMVP: 1, SBTMVP: 1, EMVR: 1, BIO: 1, BGC: 1, MVAP: 1, AFFINE_UMVE: 1, 
+IPCM: 1, TSCPM: 1, Enhance_TSCPM: 1, IPF_CHROMA: 1, PMC: 1, FIMC: 0, MIPF: 1, IPF: 1, IBC: 0, ABVR: 1, SP: 0, 
+PBT: 0, SecondaryTr: 1, SBT: 1, IST: 1, ISTS: 0, EST: 1, WeightedQuant: 0, 
+INTRA_DT: 1, MaxDTSize: 64, 
+DMVR: 1, INTERPF: 1, SRCC: 1, 
+EIPM: 1, 
+MULTI_CABAC: 1, 
+-------------------------------------------------------------------------------
+  Input YUV file           : D:\test\yuv\0001_2040x1404.yuv 
+  Output bitstream         : D:\test\0820\0001_2040x1404_37.bin 
+  Output YUV file          : D:\test\0820\0001_2040x1404_37.yuv 
+--------------------------------------------------------------------------------------
+ POC       QP   PSNR-Y    PSNR-U    PSNR-V    Bits      EncT(ms)   MS-SSIM   Ref. List
+--------------------------------------------------------------------------------------
+0      ( I) 53   36.5656   36.6117   39.2550   930960    575359    0.9851363   [L0 ] [L1 ] 
+Entering bumping process... 
+===============================================================================
+  PSNR Y(dB)       : 36.5656
+  PSNR U(dB)       : 36.6117
+  PSNR V(dB)       : 39.2550
+  MsSSIM_Y         : 0.9851363
+  Total bits(bits) : 930960
+  bitrate(kbps)    : 46548.0000
+===============================================================================
+Encoded frame count               = 1
+Total encoding time               = 575359.000 msec, 575.359 sec
+Average encoding time for a frame = 575359.000 msec
+Average encoding speed            = 0.002 frames/sec
+===============================================================================

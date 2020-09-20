@@ -37,15 +37,17 @@ def log_hpm(fn):
     with open(fn, "r") as f:
         lines = list(f.readlines())
         nline = len(lines)
-        if nline < 49:
+        if lines[0].startswith("Note"):
+            nline -= 1
+        if nline < 48:
             return "wait", 0, None
         elif lines[-2] and lines[-2].split()[-1] == "frames/sec":
             cl = lines[-12:-6] + lines[-5:-4]
             values = [v.split()[-1] for v in cl]
             values.append(lines[-4].split()[-2])  # Total Time
-            return "finish", nline-63, values
+            return "finish", nline-62, values
         else:
-            return "excute", nline-49, None
+            return "excute", nline-48, None
 
 def log_getEnctype(fn):
     enctype = ""

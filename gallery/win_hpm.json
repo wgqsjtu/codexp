@@ -1,6 +1,6 @@
 {
     "once": {
-        "title": "win hpm"
+        "title": "win hpm",
         "base": "C:\\AVS3test\\hpm-HPM-8.0-ModAI-3.0",
         "inpath": "D:\\test\\yuv",
         "outpath": "D:\\test\\0820",
@@ -8,7 +8,7 @@
     },
     "iter": [
         "input | para",
-        "{inpath}/**/*.yuv | 37"
+        "{inpath}/*.yuv | 37"
     ],
     "each": {
         "$inname": "os.path.basename(state['input']).split('.')[0]",
