@@ -14,8 +14,6 @@ class SafeFormatter(Formatter):
     def get_value(self, key, args, kwargs):
         if key not in kwargs:
             return "{%s}"%key
-        elif '$' in key:
-            pass
         else:
             return kwargs[key]
             
@@ -339,30 +337,47 @@ def show():
     print("EXP @",recent[0])
     
     # read log
-    fnfix = "%s"
-    results = []
-    sample = fnfix%next(iter(tasks))
-    enctype = log_getEnctype(sample)
+    HASLOG = False
+    if HASLOG:
+        fnfix = "%s"
+        results = []
+        sample = fnfix%next(iter(tasks))
+        enctype = log_getEnctype(sample)
 
-    for tkey, tvalue in tasks.items():
-        status = "wait"
-        cur, total = tvalue["status"].split('/')
-        fn = fnfix%tkey
-        if os.path.exists(fn):
-            status, cur, result = log_adapter(fn, enctype)
-            if result:
-                results.append(result)
-        tvalue["status"] = "%3d/%3d"%(int(cur), int(total))
-        count[status] += 1
-        print("[{}] {}".format(tvalue["status"],tkey.split("/")[-1]))
-    print('Total %d tasks, %d wait, %d excute, %d finish.' %
-          (len(tasks), count["wait"], count["excute"], count["finish"]))
-    with open("result.csv","w") as f:
-        f.write(",".join(LOG_KEYS[enctype])+"\n")
-        for result in results:
-            f.write(','.join(result)+'\n')
-    print("result.csv generated.")
-    saveconf(history, fn="history.json")
+        for tkey, tvalue in tasks.items():
+            status = "wait"
+            cur, total = tvalue["status"].split('/')
+            fn = fnfix%tkey
+            if os.path.exists(fn):
+                status, cur, result = log_adapter(fn, enctype)
+                if result:
+                    results.append(result)
+            tvalue["status"] = "%3d/%3d"%(int(cur), int(total))
+            count[status] += 1
+            print("[{}] {}".format(tvalue["status"],tkey.split("/")[-1]))
+        print('Total %d tasks, %d wait, %d excute, %d finish.' %
+            (len(tasks), count["wait"], count["excute"], count["finish"]))
+        with open("result.csv","w") as f:
+            f.write(",".join(LOG_KEYS[enctype])+"\n")
+            for result in results:
+                f.write(','.join(result)+'\n')
+        print("result.csv generated.")
+        saveconf(history, fn="history.json")
+    else:
+        fnfix = "%s.png"
+        results = []
+
+        for tkey, tvalue in tasks.items():
+            status = "wait"
+            fn = fnfix%tkey
+            if os.path.exists(fn):
+                status = "finish"
+            else:
+                print(fn)
+            count[status] += 1
+        print('Total %d tasks, %d wait, %d excute, %d finish.' %
+            (len(tasks), count["wait"], count["excute"], count["finish"]))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -384,3 +399,5 @@ if __name__ == '__main__':
         dict_func[args.verb]()
 
 
+
+# %%
