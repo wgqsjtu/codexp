@@ -1,5 +1,71 @@
 # codexp编码实验管理工具
 
+## 批处理版本 cbatch.py
+
+```
+python cbatch.py verb inpath outpath --opt options
+```
+
+对inpath目录中的每个合适的文件，执行verb，输出到outpath目录，有时需手动修改代码。
+
+针对YUV文件，会自动从文件名推断尺寸、位深等信息，如Campfire_1920x1080_10bit_420.yuv。
+
+运行模式包括：本地快速运行，本地服务器模式，远程服务器模式。服务器模式下，可以一直提交新的任务(bug)。
+
+快速任务verb包括：
+
+- toyuv： ffmpeg png to yuv
+- topng： ffmpeg yuv to png
+- psnr： ffmpeg measure psnr, 从输入文件名匹配输出文件名，测量psnr，并汇总输出measure.csv到当前目录
+- vtmenc：使用 VVC VTM 编码器进行编码，需配置路径和命令行
+- hpmenc：使用 AVS HPM 编码器进行编码，需配置路径和命令行
+- hpmcrop：使用ffmpeg切去HPM编码后的自动padding
+- show：分析输入目录的编码器log，输出enclog.csv到当前目录
+- run： 检查并提交用户给定的任务列表
+
+
+选项--opt包括：
+
+- --cf：强制使用指定的色度采样格式，如 420|422|444
+- --qps：编码类应用使用的QP列表，应为python中的列表或元组，如 27, | 27,32 | "range(27,43,5)" 
+- --core：指定同时执行任务的多进程数量，默认 4，服务器上需另外设置
+- --host：指定任务在哪台机器运行，默认off：本机快速运行，local：本机服务器模式，其他自定义服务器，需配置iptables和ssh无密码连接，并在远端运行python server.py
+- --wait：服务器模式下，提交任务后定时检查运行情况的时间间隔秒数
+
+使用注意：
+
+- 无需安装任何python包
+- 一般需使用绝对路径，可以软链接到你的实验目录，如`ln ~/codexp/cbatch.py ~/test/cbatch.py`，这样即可在实验目录使用相对路径。
+- 目前server仅支持Linux发行版，使用server模式需先在代码里配置多线程数量，如`RunPool(32)`
+
+
+
+## 开发计划
+
+[todo] Server Enhance, const overload for time measurement
+[todo] Data processing
+[todo] Batch Pipeline
+[201023] Dir-level batch operation
+[200919] Adapter to diffenent codec
+[200822] Grammer newly designed
+
+### features
+- show pid
+- gallery and job template
+- local server mode & remote mode
+- Sample. run several shells to check.
+- RD-plot
+
+### Server
+- server linux ?windows
+- client linux ?windows
+- file transfer
+  - client2server 
+  - master2slave scp
+- 
+
+## 复杂配置版本 codexp.py
+
 管理任务，对每个Job起一个标识符，排序检索已完成的任务及其结果。清理运行的结果。
 
 分为client和server，先在本地写好json/toml配置文件，之后运行：
@@ -12,32 +78,7 @@
 - clean：清除某次任务
 
 
-## timeline
-
-[todo] Pipeline
-[todo] Job Template
-[todo] Server Enhance
-[200919] Adapter to diffenent codec
-[200822] Grammer newly designed
-
-## features
-- show pid
-- gallery and job template
-- local server mode & remote mode
-- Sample. run several shells to check.
-- RD-plot
-- quick job, job pipeline
-
-### Server
-- server linux ?windows
-- client linux ?windows
-- file transfer
-  - client2server 
-  - master2slave scp
-- 
-
-
-## new
+### new
 
 生成序号自增的配置文件，例如`job001.json`，用户编辑文件，之后的命令将自动使用最新配置文件。gallery中提供了系列常用配置作为模板，也可以将自定义配置移入其中。new命令会自动匹配对应的文件，生成新的job，默认模板为`conf_pro.json`。
 
@@ -81,7 +122,7 @@ python codexp.py new HM
 }
 ```
 
-## start
+### start
 
 ```shell
 python codexp.py start test.json
@@ -128,11 +169,11 @@ TODO：给出未解析的字段
 - 选）从{meta}中获得
 - 选）推断shell中的-f n选项
 
-## meta
+### meta
 
 从文件名推断输入文件的基本信息。
 
-## run
+### run
 
 本地将`jobxxx.json`提交到服务器，服务器端会检查tasks中的任务status，然后加入运行队列。参数有：
 
@@ -142,7 +183,7 @@ TODO：给出未解析的字段
 - `--kill 1053`：结束某任务。
 
 
-## show
+### show
 
 检查task中的任务status，给出运行情况。如果任务全为success，则统计得出结果.csv。管理历史运行数据。参数有：
 
@@ -162,6 +203,6 @@ pid		status		frame		log
 1 success, 1 excuting, 1 wait, 1 fail.
 ```
 
-## clean
+### clean
 
 清除某一次任务，传入标识符。

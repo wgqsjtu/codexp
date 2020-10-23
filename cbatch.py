@@ -7,10 +7,9 @@ from multiprocessing import Pool
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-BASEPF = "420"
+BASECF = "420"
 
 def post(addr, pf, base=None):
-    
     request = Request(base_url+addr, urlencode(pf).encode())
     return urlopen(request).read().decode()
 
@@ -18,11 +17,82 @@ def get(addr):
     request = Request(base_url+addr)
     return urlopen(request).read().decode()
 
+TRANSLATE = {}
 LOG_KEYS = {
     "PSNR": ['y', 'u', 'v', 'avg', 'min', 'max'],
-    "HM": ['Total Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Total Time'],
-    "HPM": ['PSNR Y(dB)', 'PSNR U(dB)', 'PSNR V(dB)', 'MsSSIM_Y', 'Total bits(bits)', 'bitrate(kbps)', 'Encoded frame count', 'Total encoding time']
+    "VTM": ['Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Time'],
+    "HM": ['Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Time'],
+    "HPM": ['Y-PSNR', 'U-PSNR', 'V-PSNR', 'Y-MSSSIM', 'Bits', 'Bitrate', 'Frames', 'Time']
 }
+
+# return status curframe results
+def log_vtm(fn):
+    with open(fn, "r") as f:
+        lines = list(f.readlines())
+        nline = len(lines)
+        if nline < 10:
+            return "wait", 0, None
+        elif lines[-2] and lines[-2].split()[0] == "finished":
+            values = lines[-4].split()
+            values.append(lines[-1].split()[2])  # Total Time
+            return "finish", nline-15, values
+        else:
+            return "excute", nline-10, None
+
+
+def log_hm(fn):
+    with open(fn, "r") as f:
+        lines = list(f.readlines())
+        nline = len(lines)
+        if nline < 68:
+            return "wait", 0, None
+        elif lines[-1] and lines[-1].split()[-1] == "sec.":
+            values = lines[-21].split()
+            values.append(lines[-1].split()[2])  # Total Time
+            return "finish", nline-92, values
+        else:
+            return "excute", nline-68, None
+
+def log_hpm(fn):
+    with open(fn, "r") as f:
+        lines = list(f.readlines())
+        nline = len(lines)
+        if lines[0].startswith("Note"):
+            nline -= 1
+        if nline < 48:
+            return "wait", 0, None
+        elif lines[-2] and lines[-2].split()[-1] == "frames/sec":
+            cl = lines[-12:-6] + lines[-5:-4]
+            values = [v.split()[-1] for v in cl]
+            values.append(lines[-4].split()[-2])  # Total Time
+            return "finish", nline-62, values
+        else:
+            return "excute", nline-48, None
+
+def log_getEnctype(fn):
+    enctype = ""
+    with open(fn, "r") as f:
+        lines = list(f.readlines())
+        nline = len(lines)
+        if nline>1:
+            if lines[1].startswith("VVCSoftware: VTM Encoder Version"):
+                enctype = "VTM"
+            elif lines[1].startswith("HM software: Encoder Version"):
+                enctype = "HM"
+            elif lines[1].startswith("HPM version"):
+                enctype = "HPM"
+    return enctype
+
+def log_adapter(fn, enctype=""):
+    if not enctype: # interpret
+        enctype = log_getEnctype(fn)
+    dict_func = {
+        "VTM": log_vtm,
+        "HM": log_hm,
+        "HPM": log_hpm
+    }
+    return dict_func[enctype](fn)
+
 
 meta_dict =  {
     "InputBitDepth": "8",
@@ -49,9 +119,8 @@ def readyuv420(filename, bitdepth, W, H):
     return str(totalframe)
 
 def meta_fn(fn, calcFrames=False):
-    filename = fn
     meta = meta_dict.copy()
-    items = filename[:-4].split("_")[1:]
+    items = fn[:-4].split("_")[1:]
     for item in items:
         if re.match(r"^[0-9]*x[0-9]*$", item):
             meta["SourceWidth"], meta["SourceHeight"] = item.split("x")
@@ -66,7 +135,7 @@ def meta_fn(fn, calcFrames=False):
     if calcFrames:
         meta["AllFrames"] = readyuv420(fn, meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
     if not meta["InputChromaFormat"]:
-        meta["InputChromaFormat"] = BASEPF
+        meta["InputChromaFormat"] = BASECF
     meta["PixelFormat"] = "yuv{}p".format(meta["InputChromaFormat"])
     if meta["InputBitDepth"] == "10":
         meta["PixelFormat"] = meta["PixelFormat"]+"10le"
@@ -84,7 +153,6 @@ def yuvopt(fn):
 
 def psnr(enc, ref):
     cmd = 'ffmpeg -v info %s %s -filter_complex psnr -f null -y - 2>&1' % (yuvopt(enc), yuvopt(ref))
-    ret = []
     for line in os.popen(cmd).readlines():
         if "PSNR" in line:
             tmp = line[:-1].split(' ')
@@ -230,6 +298,31 @@ def hpmcrop(inpath, outpath):
         cmd = shell.format(fin=fin, **meta, fout=fout)
         TASKS.append(cmd)
 
+
+def show(inpath, outpath):
+    print('--- Analyze encode logs. ---')
+    tasks = sorted(glob.glob(inpath+"/*.log"))
+    count = {"wait": 0, "excute":0, "finish": 0}
+    enctype = log_getEnctype(tasks[0])
+    results = []
+    for fn in tasks:
+        inname = os.path.basename(fn).split('.')[0]
+        status, cur, result = log_adapter(fn, enctype)
+        if result:
+            results.append([inname]+result)
+        count[status] += 1
+        if status != "finish":
+            print("[{}] {}.log".format(status, inname))
+    print('Total %d tasks, %d wait, %d excute, %d finish.' %
+            (len(tasks), count["wait"], count["excute"], count["finish"]))
+    with open("enclog.csv","w") as f:
+        f.write('fn,'+','.join(LOG_KEYS[enctype])+"\n")
+        for result in results:
+            f.write(','.join(result)+'\n')
+    print("enclog.csv generated.")
+
+
+
 def netop(inpath, outpath, op):
     cmds = [
         "rm /home/medialab/faymek/iir/datasets/cli/*",
@@ -253,14 +346,15 @@ def call_script(script):
 
 if __name__ == '__main__':
     funcMap = {'yuv1stframe':yuv1stframe,'topng': yuv2png, 'toyuv': png2yuv,
-                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop, 'psnr': measure, 'netop':netop, 'vtmenc':vtmenc}
+                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop, 'psnr': measure, 
+                 'netop':netop, 'vtmenc':vtmenc, 'show':show}
 
     parser = argparse.ArgumentParser(
         description='Media Encoding Utils. Copyright @ 2016-2020')
     parser.add_argument(
         "verb", choices=list(funcMap.keys()))
     parser.add_argument("inpath")
-    parser.add_argument("outpath")
+    parser.add_argument("outpath", default="./")
     parser.add_argument("--host", type=str, default="off",
                         help="run in which machine")
     parser.add_argument("--core", type=int, default=4,
@@ -271,21 +365,24 @@ if __name__ == '__main__':
                         help="encode qp list")
     parser.add_argument("--op", type=str, default="x2d", choices=["x2d", "x2u", "x4d", "x4u"],
                         help="network operation")
-    parser.add_argument("--pf", type=str, default="420", choices=["420", "422", "444"],
-                        help="pixel format")
+    parser.add_argument("--cf", type=str, default="420", choices=["420", "422", "444"],
+                        help="chroma format")
     
 
     args = parser.parse_args()
     args.inpath = getabspath(args.inpath)
     args.outpath = getabspath(args.outpath)
     args.qps = eval(args.qps)
-    BASEPF = args.pf
+    BASECF = args.cf
 
     os.makedirs(args.outpath, exist_ok=True)
     if args.verb in ['hpmenc', 'vtmenc']:
         funcMap[args.verb](args.inpath, args.outpath, args.qps)
     elif args.verb == 'netop':
         netop(args.inpath, args.outpath, args.op)
+    elif args.verb in ['psnr', 'show']:
+        funcMap[args.verb](args.inpath, args.outpath)
+        sys.exit()
     else:
         funcMap[args.verb](args.inpath, args.outpath)
     with open("tasks.json","w") as f:
@@ -344,4 +441,7 @@ if __name__ == '__main__':
             os.system("scp -r {}:{}/* {}".format(args.host,remout,args.outpath))
 
     print("\n--- Job done. ---")
+
+    
+# %%
 
