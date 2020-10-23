@@ -7,15 +7,21 @@ from multiprocessing import Pool
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-BASECF = "420"
-
-def post(addr, pf, base=None):
-    request = Request(base_url+addr, urlencode(pf).encode())
-    return urlopen(request).read().decode()
-
-def get(addr):
-    request = Request(base_url+addr)
-    return urlopen(request).read().decode()
+TASKS = []
+HOST = {
+    "host.local": {
+        "ip": "127.0.0.1",
+        "vtm.base": "/home/faymek/VTM"
+    },
+    "host.enc": {
+        "ip": "172.16.7.84",
+        "vtm.base": "/home/enc/faymek/VTM",
+        "hpm.base": "/home/enc/faymek/hpm-phase-2"
+    },
+    "host.4gpu": {
+        "ip": "10.243.65.72"
+    }
+}
 
 TRANSLATE = {}
 LOG_KEYS = {
@@ -24,6 +30,29 @@ LOG_KEYS = {
     "HM": ['Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Time'],
     "HPM": ['Y-PSNR', 'U-PSNR', 'V-PSNR', 'Y-MSSSIM', 'Bits', 'Bitrate', 'Frames', 'Time']
 }
+
+META =  {
+    "InputBitDepth": "8",
+    "InputChromaFormat": "",
+    "FrameRate": "",
+    "SourceWidth": "",
+    "SourceHeight": "",
+    "AllFrames": "",
+    "PixelFormat": ""
+}
+
+class BaseConf:
+    def __init__(self):
+        pass
+
+def post(addr, pf, base=None):
+    request = Request(Conf.baseurl+addr, urlencode(pf).encode())
+    return urlopen(request).read().decode()
+
+def get(addr):
+    request = Request(Conf.baseurl+addr)
+    return urlopen(request).read().decode()
+
 
 # return status curframe results
 def log_vtm(fn):
@@ -38,7 +67,6 @@ def log_vtm(fn):
             return "finish", nline-15, values
         else:
             return "excute", nline-10, None
-
 
 def log_hm(fn):
     with open(fn, "r") as f:
@@ -94,18 +122,6 @@ def log_adapter(fn, enctype=""):
     return dict_func[enctype](fn)
 
 
-meta_dict =  {
-    "InputBitDepth": "8",
-    "InputChromaFormat": "",
-    "FrameRate": "",
-    "SourceWidth": "",
-    "SourceHeight": "",
-    "AllFrames": "",
-    "PixelFormat": ""
-}
-
-TASKS = []
-
 def readyuv420(filename, bitdepth, W, H):
     if bitdepth == '8':
         bytesPerPixel = 1
@@ -119,7 +135,7 @@ def readyuv420(filename, bitdepth, W, H):
     return str(totalframe)
 
 def meta_fn(fn, calcFrames=False):
-    meta = meta_dict.copy()
+    meta = META.copy()
     items = fn[:-4].split("_")[1:]
     for item in items:
         if re.match(r"^[0-9]*x[0-9]*$", item):
@@ -135,7 +151,7 @@ def meta_fn(fn, calcFrames=False):
     if calcFrames:
         meta["AllFrames"] = readyuv420(fn, meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
     if not meta["InputChromaFormat"]:
-        meta["InputChromaFormat"] = BASECF
+        meta["InputChromaFormat"] = Conf.cf
     meta["PixelFormat"] = "yuv{}p".format(meta["InputChromaFormat"])
     if meta["InputBitDepth"] == "10":
         meta["PixelFormat"] = meta["PixelFormat"]+"10le"
@@ -201,9 +217,6 @@ def measure(inpath, outpath, metric='psnr'):
             f.writelines([outname+','+','.join(item)+'\n' for item in results])
 
 
-            
-
-
 def yuv1stframe(inpath, outpath):
     shell = "ffmpeg -y -f rawvideo -video_size {SourceWidth}x{SourceHeight} -pixel_format {PixelFormat} -i {fin} -vframes 1 {fout}.yuv"
     inglob = "{inpath}/*.yuv".format(inpath=inpath)
@@ -240,10 +253,7 @@ def yuv2png(inpath, outpath):
 
 
 def hpmenc(inpath, outpath, qplist=[]):
-    base = "/home/enc/faymek/hpm-phase-2" # path of HPM encoder
-    if not base:
-        print("please set encoder path")
-        return
+    base = Conf.host["hpm.base"]
     shell = ' '.join([
         "{base}/bin/app_encoder",
         "--config {base}/cfg/encode_AI.cfg",
@@ -260,11 +270,9 @@ def hpmenc(inpath, outpath, qplist=[]):
             #print(cmd)
             TASKS.append(cmd)
 
+
 def vtmenc(inpath, outpath, qplist=[56]):
-    base = "/home/enc/faymek/VTM" # path of HPM encoder
-    if not base:
-        print("please set encoder path")
-        return
+    base = Conf.host["hpm.base"]
     shell = ' '.join([
         "{base}/bin/EncoderAppStatic",
         "-c {base}/cfg/encoder_intra_vtm.cfg",
@@ -322,7 +330,6 @@ def show(inpath, outpath):
     print("enclog.csv generated.")
 
 
-
 def netop(inpath, outpath, op):
     cmds = [
         "rm /home/medialab/faymek/iir/datasets/cli/*",
@@ -350,7 +357,7 @@ if __name__ == '__main__':
                  'netop':netop, 'vtmenc':vtmenc, 'show':show}
 
     parser = argparse.ArgumentParser(
-        description='Media Encoding Utils. Copyright @ 2016-2020')
+        description='Media Encoding Batch Utils. Copyright @ 2016-2020')
     parser.add_argument(
         "verb", choices=list(funcMap.keys()))
     parser.add_argument("inpath")
@@ -368,12 +375,16 @@ if __name__ == '__main__':
     parser.add_argument("--cf", type=str, default="420", choices=["420", "422", "444"],
                         help="chroma format")
     
-
     args = parser.parse_args()
     args.inpath = getabspath(args.inpath)
     args.outpath = getabspath(args.outpath)
     args.qps = eval(args.qps)
-    BASECF = args.cf
+    Conf = BaseConf()
+    Conf.cf = args.cf
+    if args.host == "off":
+        Conf.host = HOST["host.local"]
+    else:
+        Conf.host = HOST["host."+args.host]
 
     os.makedirs(args.outpath, exist_ok=True)
     if args.verb in ['hpmenc', 'vtmenc']:
@@ -397,12 +408,7 @@ if __name__ == '__main__':
         RunPool.join()
 
     else:  # server mode, check server
-        iptables = {
-            "local": "127.0.0.1",
-            "enc": "172.16.7.84",
-            "4gpu": "10.243.65.72",
-        }
-        base_url = 'http://{}:42024'.format(iptables[args.host])
+        Conf.baseurl = 'http://{}:42024'.format(Conf.host["ip"])
         try:
             print("Host %s : "%args.host+get("/id"))
         except:
