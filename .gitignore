@@ -4,3 +4,4 @@ result/
 seq/
 __pycache__/
 result.csv
+history.json

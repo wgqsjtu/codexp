@@ -20,10 +20,21 @@
 [200919] Adapter to diffenent codec
 [200822] Grammer newly designed
 
-TODO:
+## features
 - show pid
 - gallery and job template
 - local server mode & remote mode
+- Sample. run several shells to check.
+- RD-plot
+- quick job, job pipeline
+
+### Server
+- server linux ?windows
+- client linux ?windows
+- file transfer
+  - client2server 
+  - master2slave scp
+- 
 
 
 ## new

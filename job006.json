@@ -2,8 +2,8 @@
     "once": {
         "title": "linux ffmpeg yuv2png",
         "base": "~/codexp",
-        "inpath": "{base}/seq/HRyuv",
-        "output": "{base}/result/{$inname}"
+        "inpath": "~/test/23_hpmcrop",
+        "output": "~/test/24_topng/{$inname}"
     },
     "iter": [
         "input",
@@ -30,7 +30,7 @@
         }
     },
     "shell": [
-        "ffmpeg -video_size {SourceWidth}x{SourceHeight} -pixel_format {pixel_format}",
+        "ffmpeg -f rawvideo -video_size {SourceWidth}x{SourceHeight} -pixel_format {pixel_format}",
         "-i {input}",
         "-vframes 1 {output}.png"
     ]

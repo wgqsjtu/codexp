@@ -7,7 +7,10 @@ from multiprocessing import Pool
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-def post(addr, pf):
+BASEPF = "420"
+
+def post(addr, pf, base=None):
+    
     request = Request(base_url+addr, urlencode(pf).encode())
     return urlopen(request).read().decode()
 
@@ -15,7 +18,7 @@ def get(addr):
     request = Request(base_url+addr)
     return urlopen(request).read().decode()
 
-FFMPEG_KEYS = {
+LOG_KEYS = {
     "PSNR": ['y', 'u', 'v', 'avg', 'min', 'max'],
     "HM": ['Total Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Total Time'],
     "HPM": ['PSNR Y(dB)', 'PSNR U(dB)', 'PSNR V(dB)', 'MsSSIM_Y', 'Total bits(bits)', 'bitrate(kbps)', 'Encoded frame count', 'Total encoding time']
@@ -23,7 +26,7 @@ FFMPEG_KEYS = {
 
 meta_dict =  {
     "InputBitDepth": "8",
-    "InputChromaFormat": "420",
+    "InputChromaFormat": "",
     "FrameRate": "",
     "SourceWidth": "",
     "SourceHeight": "",
@@ -62,57 +65,43 @@ def meta_fn(fn, calcFrames=False):
             meta["FrameRate"] = item
     if calcFrames:
         meta["AllFrames"] = readyuv420(fn, meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
-    meta["PixelFormat"] = "yuv420p10le" if meta["InputBitDepth"] == "10" else "yuv420p"
+    if not meta["InputChromaFormat"]:
+        meta["InputChromaFormat"] = BASEPF
+    meta["PixelFormat"] = "yuv{}p".format(meta["InputChromaFormat"])
+    if meta["InputBitDepth"] == "10":
+        meta["PixelFormat"] = meta["PixelFormat"]+"10le"
     return meta
     
+def getabspath(s):
+    return os.path.abspath(os.path.expanduser(s))\
 
-def ffmpegmeasure(enc, ref):
-    yuvopt = " -s {SourceWidth}x{SourceHeight} -pix_fmt {PixelFormat} "
-    opt_enc = "-i %s"%enc
-    if enc.endswith(".yuv"):
-        opt_enc = yuvopt.format(**meta_fn(enc)) + opt_enc
-    opt_ref = "-i %s"%ref
-    if enc.endswith(".yuv"):
-        opt_ref = yuvopt.format(**meta_fn(ref)) + opt_ref
+def yuvopt(fn):
+    opt = "-i %s"%fn
+    if fn.endswith(".yuv"):
+        yuvinfo = " -s {SourceWidth}x{SourceHeight} -pix_fmt {PixelFormat} "
+        opt = yuvinfo.format(**meta_fn(fn)) + opt
+    return opt
 
-    cmd = 'ffmpeg -v info %s %s -filter_complex psnr -f null -y - 2>&1' % (opt_enc, opt_ref)
-    print(cmd)
+def psnr(enc, ref):
+    cmd = 'ffmpeg -v info %s %s -filter_complex psnr -f null -y - 2>&1' % (yuvopt(enc), yuvopt(ref))
     ret = []
     for line in os.popen(cmd).readlines():
         if "PSNR" in line:
             tmp = line[:-1].split(' ')
-            ret = [item.split(':')[1] for item in tmp if ':' in item]
-    return ret
+            info = ' '.join(tmp[4:7])
+            data = [item.split(':')[1] for item in tmp if ':' in item]
+    return info, data
 
-def psnr(enc_yuv, raw_yuv,w, h, bitdepth):
-    w = str(w)
-    h = str(h)
-    fmt = "yuv420p10le" if bitdepth == 10 else "yuv420p"
-    cmd = 'ffmpeg -v info -s %sx%s -pix_fmt %s -i %s -s %sx%s -pix_fmt %s -i %s -filter_complex psnr -f null -y - 2>&1' % (w,h,fmt,enc_yuv,w,h,fmt,raw_yuv)
-    r = os.popen(cmd).readlines()
+def ssim(enc, ref):
+    cmd = 'ffmpeg -v info %s %s -filter_complex ssim -f null -y - 2>&1' % (yuvopt(enc), yuvopt(ref))
     ret = []
-    for line in r:
-        if "PSNR" in line:
-            tmp = line[:-1].split(' ')
-            for item in tmp:
-                if ':' in item:
-                    ret.append(item.split(':')[1])
-    return ret
-
-def ssim(enc_yuv, raw_yuv,w, h):
-    w = str(w)
-    h = str(h)
-    cmd = 'ffmpeg -v info -s %sx%s -i %s -s %sx%s -i %s -filter_complex ssim -f null -y - 2>&1' % (w,h,enc_yuv,w,h,raw_yuv)
-    r = os.popen(cmd).readlines()
-    ret = []
-    for line in r:
+    for line in os.popen(cmd).readlines():
         if "SSIM" in line:
             tmp = line[:-1].split(' ')
-            for item in tmp:
-                if ':' in item:
-                    ret.append(item.split(':')[1])
+            ret = tmp[4:]
+            #ret = [item.split(':')[1] for item in tmp if ':' in item]
     return ret
-            
+
 def vmaf(enc_yuv, raw_yuv,w, h):
     w = str(w)
     h = str(h)
@@ -123,6 +112,29 @@ def vmaf(enc_yuv, raw_yuv,w, h):
        if '=' in line:
           ret = line[:-1].split()[-1]
     return ret
+
+def measure(inpath, outpath, metric='psnr'):
+    #for ext in ('*.yuv', '*.png', '*.jpg'):
+    #    files.extend(glob(join("path/to/dir", ext)))
+    inglob = inpath + "/*"
+    for fin in glob.glob(inglob):
+        inname = '_'.join(os.path.basename(fin).split('_')[:-1])
+        outglob = "{outpath}/{inname}*".format(outpath=outpath,inname=inname) 
+        results = []
+        for fout in sorted(glob.glob(outglob)):
+            outname = os.path.basename(fout)
+            info, data = psnr(fin,fout)
+            results.append(data)
+            print("%-48s %s"%(outname, info))
+        if not results:
+            print("No matches.")
+        with open("measure.csv", "w") as f:
+            f.write('fn,'+','.join(LOG_KEYS["PSNR"])+'\n')
+            f.writelines([outname+','+','.join(item)+'\n' for item in results])
+
+
+            
+
 
 def yuv1stframe(inpath, outpath):
     shell = "ffmpeg -y -f rawvideo -video_size {SourceWidth}x{SourceHeight} -pixel_format {PixelFormat} -i {fin} -vframes 1 {fout}.yuv"
@@ -143,6 +155,7 @@ def png2yuv(inpath, outpath):
         fout = "{outpath}/{inname}".format(outpath=outpath,inname=inname)
         meta = meta_fn(fin)
         cmd = shell.format(fin=fin, **meta, fout=fout)
+        #print(cmd)
         TASKS.append(cmd)
 
 
@@ -154,11 +167,12 @@ def yuv2png(inpath, outpath):
         fout = "{outpath}/{inname}".format(outpath=outpath,inname=inname)
         meta = meta_fn(fin)
         cmd = shell.format(fin=fin, **meta, fout=fout)
+        print(cmd)
         TASKS.append(cmd)
 
 
 def hpmenc(inpath, outpath, qplist=[]):
-    base = "Some" # path of HPM encoder
+    base = "/home/enc/faymek/hpm-phase-2" # path of HPM encoder
     if not base:
         print("please set encoder path")
         return
@@ -178,10 +192,31 @@ def hpmenc(inpath, outpath, qplist=[]):
             #print(cmd)
             TASKS.append(cmd)
 
+def vtmenc(inpath, outpath, qplist=[56]):
+    base = "/home/enc/faymek/VTM" # path of HPM encoder
+    if not base:
+        print("please set encoder path")
+        return
+    shell = ' '.join([
+        "{base}/bin/EncoderAppStatic",
+        "-c {base}/cfg/encoder_intra_vtm.cfg",
+        "-i {fin} -wdt {SourceWidth} -hgt {SourceHeight} -fr 30 -f 1 -q {qp} --InputChromaFormat={InputChromaFormat}",
+        "--InputBitDepth={InputBitDepth} --OutputBitDepth={InputBitDepth} --ConformanceMode ",
+        "-b {fout}.bin -o {fout}.yuv > {fout}.log"
+    ])
+    inglob = "{inpath}/*.yuv".format(inpath=inpath)
+    for fin in glob.glob(inglob):
+        inname = os.path.basename(fin).split('.')[0]
+        meta = meta_fn(fin)
+        for qp in qplist:
+            fout = "{outpath}/{inname}_{qp}".format(outpath=outpath,inname=inname,qp=qp)
+            cmd = shell.format(base=base,fin=fin, **meta, fout=fout, qp=qp)
+            TASKS.append(cmd)
+
 
 def hpmcrop(inpath, outpath):
     shell = ' '.join([
-        "ffmpeg -y -f rawvideo -pixel_format yuv420p -video_size {TrueWidth}x{TrueHeight}",
+        "ffmpeg -y -f rawvideo -pixel_format yuv420p10le -video_size {TrueWidth}x{TrueHeight}",
         "-i {fin} -filter:v 'crop={SourceWidth}:{SourceHeight}:0:0' -vframes 1",
         "-f rawvideo -pix_fmt {PixelFormat} -s {SourceWidth}x{SourceHeight} {fout}.yuv"
     ])
@@ -195,6 +230,16 @@ def hpmcrop(inpath, outpath):
         cmd = shell.format(fin=fin, **meta, fout=fout)
         TASKS.append(cmd)
 
+def netop(inpath, outpath, op):
+    cmds = [
+        "rm /home/medialab/faymek/iir/datasets/cli/*",
+        "mv %s/* /home/medialab/faymek/iir/datasets/cli/"%inpath,
+        "/home/medialab/miniconda3/envs/iir/bin/python /home/medialab/faymek/iir/codes/test_%s.py -opt ~/faymek/iir/codes/options/test/%s.yml"%(op[-1], op),
+        "mv /home/medialab/faymek/iir/results/test/%s/* %s/"%(op, outpath)
+    ]
+    TASKS.extend(cmds) 
+
+
 def call_script(script):
     desc = script.split('/')[-1]
     stamp = time.strftime("%m-%d %H:%M", time.localtime())
@@ -207,86 +252,96 @@ def call_script(script):
 
 
 if __name__ == '__main__':
+    funcMap = {'yuv1stframe':yuv1stframe,'topng': yuv2png, 'toyuv': png2yuv,
+                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop, 'psnr': measure, 'netop':netop, 'vtmenc':vtmenc}
+
     parser = argparse.ArgumentParser(
         description='Media Encoding Utils. Copyright @ 2016-2020')
     parser.add_argument(
-        "verb", choices=['topng', 'toyuv', 'hpmenc', 'hpmcrop', 'yuv1stframe'])
-
+        "verb", choices=list(funcMap.keys()))
     parser.add_argument("inpath")
     parser.add_argument("outpath")
-    parser.add_argument("--host", type=str, default="local",
+    parser.add_argument("--host", type=str, default="off",
                         help="run in which machine")
     parser.add_argument("--core", type=int, default=4,
                         help="run with n concurrent process")
+    parser.add_argument("--wait", type=int, default=5,
+                        help="check for every n seconds")
+    parser.add_argument("--qps", type=str, default="56,",
+                        help="encode qp list")
+    parser.add_argument("--op", type=str, default="x2d", choices=["x2d", "x2u", "x4d", "x4u"],
+                        help="network operation")
+    parser.add_argument("--pf", type=str, default="420", choices=["420", "422", "444"],
+                        help="pixel format")
     
 
     args = parser.parse_args()
-    dict_func = {'yuv1stframe':yuv1stframe,'topng': yuv2png, 'toyuv': png2yuv,
-                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop}
+    args.inpath = getabspath(args.inpath)
+    args.outpath = getabspath(args.outpath)
+    args.qps = eval(args.qps)
+    BASEPF = args.pf
 
     os.makedirs(args.outpath, exist_ok=True)
+    if args.verb in ['hpmenc', 'vtmenc']:
+        funcMap[args.verb](args.inpath, args.outpath, args.qps)
+    elif args.verb == 'netop':
+        netop(args.inpath, args.outpath, args.op)
+    else:
+        funcMap[args.verb](args.inpath, args.outpath)
+    with open("tasks.json","w") as f:
+        json.dump(TASKS, f, indent=4)
     
-    if args.host == "local":
-        if args.verb == 'hpmenc':
-            hpmenc(args.inpath, args.outpath, list(range(4,6)))
-        else:
-            dict_func[args.verb](args.inpath, args.outpath)
+    if args.host == "off": # run instant, without server
         print('Excute the %d shell script with %d process.\n' % \
-                (len(TASKS), args.core))
+            (len(TASKS), args.core))
         RunPool = Pool(args.core)
         RunPool.map_async(call_script, TASKS)
         RunPool.close()
         RunPool.join()
-    else:
-        iptables = {
-            "enc": "172.16.7.84"
-        }
-        remip = iptables[args.host]
-        base_url = 'http://{}:42024'.format(remip)
 
+    else:  # server mode, check server
+        iptables = {
+            "local": "127.0.0.1",
+            "enc": "172.16.7.84",
+            "4gpu": "10.243.65.72",
+        }
+        base_url = 'http://{}:42024'.format(iptables[args.host])
         try:
-            print("Host %s > "%args.host+get("/id"))
+            print("Host %s : "%args.host+get("/id"))
         except:
-            print("Host %s > Server Not Running."%args.host)
+            print("Host %s : Server Not Running!"%args.host)
             sys.exit()
 
         remdir = get("/path")
-        remin = remdir + "/inpath"
-        remout = remdir + "/outpath"
         key = remdir.split('/')[-1]
         print("Job key: %s"%key)
-        if args.verb == 'hpmenc':
-            hpmenc(args.inpath, remout, list(range(4,6)))
-        else:
-            dict_func[args.verb](args.inpath, remout)
-        for i in range(len(TASKS)):
-            TASKS[i] = TASKS[i].replace(args.inpath, remin)
-
-        print('Excute the %d shell script with %d process.' % \
-                (len(TASKS), args.core))
+        remin = remdir + "/inpath"
+        remout = remdir + "/outpath"
         
-        with open("tasks.json","w") as f:
-            json.dump(TASKS, f, indent=4)
-        print("\n--- SCP uploading ---\n")
-        os.system("scp tasks.json {}:{}/".format(args.host,remdir))
-        os.system("scp -r {}/* {}:{}/".format(args.inpath,args.host,remin))
+        if args.host != "local":
+            for i in range(len(TASKS)):
+                TASKS[i] = TASKS[i].replace(args.inpath, remin).replace(args.outpath, remout)
+            with open("tasks.json","w") as f:
+                json.dump(TASKS, f, indent=4)
+            print("\n--- SCP uploading ---\n")
+            os.system("scp tasks.json {}:{}/".format(args.host,remdir))
+            os.system("scp -r {}/* {}:{}/".format(args.inpath,args.host,remin))
+        else:
+            os.system("cp tasks.json {}/".format(remdir))
+        
         pf = {'fpath':remdir+"/tasks.json",'core':args.core, 'key':key}
         print(post("/add", pf))
-
         while True:
             left = get("/busy?"+key)
             stamp = time.strftime("%m-%d %H:%M", time.localtime())
             print("- [%s]: %s jobs left"%(stamp, left))
-            if left == '0':
+            if left == "0":
                 break
-            else:
-                time.sleep(5)
+            time.sleep(args.wait)
         
-        print("\n--- SCP downloading ---\n")
-        os.system("scp -r {}:{}/* {}".format(args.host,remout,args.outpath))
+        if args.host != "local":
+            print("\n--- SCP downloading ---\n")
+            os.system("scp -r {}:{}/* {}".format(args.host,remout,args.outpath))
 
-        print("\n--- Job done. ---\n")
-
-    
-# %%
+    print("\n--- Job done. ---")
 
