@@ -25,7 +25,9 @@ HOST = {
 
 TRANSLATE = {}
 LOG_KEYS = {
-    "PSNR": ['y', 'u', 'v', 'avg', 'min', 'max'],
+    "psnr": ['y', 'u', 'v', 'avg', 'min', 'max'],
+    "ssim": ['y', 'u', 'v', 'all'],
+    "vmaf": ['vmaf'],
     "VTM": ['Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Time'],
     "HM": ['Frames', '|', 'Bitrate', 'Y-PSNR', 'U-PSNR', 'V-PSNR', 'YUV-PSNR', 'Time'],
     "HPM": ['Y-PSNR', 'U-PSNR', 'V-PSNR', 'Y-MSSSIM', 'Bits', 'Bitrate', 'Frames', 'Time']
@@ -167,54 +169,45 @@ def yuvopt(fn):
         opt = yuvinfo.format(**meta_fn(fn)) + opt
     return opt
 
-def psnr(enc, ref):
-    cmd = 'ffmpeg -v info %s %s -filter_complex psnr -f null -y - 2>&1' % (yuvopt(enc), yuvopt(ref))
-    for line in os.popen(cmd).readlines():
-        if "PSNR" in line:
-            tmp = line[:-1].split(' ')
-            info = ' '.join(tmp[4:7])
-            data = [item.split(':')[1] for item in tmp if ':' in item]
-    return info, data
+def metric(enc, ref, mode='psnr', onlykey=False):
+    shellmap = {
+        "psnr": "ffmpeg -v info %s %s -filter_complex psnr -f null -y - 2>&1",
+        "ssim": "ffmpeg -v info %s %s -filter_complex ssim -f null -y - 2>&1",
+        "vmaf": "ffmpeg -v info %s %s -filter_complex libvmaf -f null -y - 2>&1",
+    }
+    cmd = shellmap[mode]%(yuvopt(enc), yuvopt(ref))
+    line = list(os.popen(cmd).readlines())[-1]
+    line = line.replace("score: ","vmaf:")
+    items = line[:-1].split(' ')[4:]
+    if onlykey:
+        return [item.split(':')[0] for item in items if ':' in item]
+    data = [item.split(':')[1] for item in items if ':' in item]
+    if "PSNR" in line:
+        info = ' '.join(items[:3])
+    elif "SSIM" in line:
+        info = ' '.join(items[0:5:2])
+    elif "VMAF" in line:
+        info = items[-1]
+    return data, info
 
-def ssim(enc, ref):
-    cmd = 'ffmpeg -v info %s %s -filter_complex ssim -f null -y - 2>&1' % (yuvopt(enc), yuvopt(ref))
-    ret = []
-    for line in os.popen(cmd).readlines():
-        if "SSIM" in line:
-            tmp = line[:-1].split(' ')
-            ret = tmp[4:]
-            #ret = [item.split(':')[1] for item in tmp if ':' in item]
-    return ret
-
-def vmaf(enc_yuv, raw_yuv,w, h):
-    w = str(w)
-    h = str(h)
-    cmd = 'vmafossexec yuv420p %s %s %s %s vmaf_v0.6.1.pkl'%(w,h,raw_yuv,enc_yuv)
-    r = os.popen(cmd).readlines()
-    ret = ''
-    for line in r:
-       if '=' in line:
-          ret = line[:-1].split()[-1]
-    return ret
-
-def measure(inpath, outpath, metric='psnr'):
-    #for ext in ('*.yuv', '*.png', '*.jpg'):
-    #    files.extend(glob(join("path/to/dir", ext)))
+def measure(inpath, outpath, mode='psnr'):
+    results = []
     inglob = inpath + "/*"
-    for fin in glob.glob(inglob):
+    for fin in sorted(glob.glob(inglob)):
         inname = '_'.join(os.path.basename(fin).split('_')[:-1])
-        outglob = "{outpath}/{inname}*".format(outpath=outpath,inname=inname) 
-        results = []
+        outglob = "{}/{}*".format(outpath,inname)
         for fout in sorted(glob.glob(outglob)):
             outname = os.path.basename(fout)
-            info, data = psnr(fin,fout)
-            results.append(data)
+            data, info = metric(fin,fout, mode)
+            results.append([outname]+data)
             print("%-48s %s"%(outname, info))
-        if not results:
+    with open("measure.csv", "w") as f:
+        if results:
+            keys = metric(fin,fout, mode, onlykey=True)
+            f.write('fn,'+','.join(keys)+'\n')
+            f.writelines([','.join(item)+'\n' for item in results])
+        else:
             print("No matches.")
-        with open("measure.csv", "w") as f:
-            f.write('fn,'+','.join(LOG_KEYS["PSNR"])+'\n')
-            f.writelines([outname+','+','.join(item)+'\n' for item in results])
 
 
 def yuv1stframe(inpath, outpath):
@@ -228,24 +221,19 @@ def yuv1stframe(inpath, outpath):
         TASKS.append(cmd)
 
 
-def png2yuv(inpath, outpath):
-    shell = "ffmpeg -y -i {fin} -pix_fmt {PixelFormat} {fout}.yuv"
-    inglob = "{inpath}/*.png".format(inpath=inpath)
+def convert(inpath, outpath, mode="png2yuv"):
+    fmtmap = {
+        "png2yuv": "ffmpeg -y -i {fin} -pix_fmt {PixelFormat} {fout}.yuv",
+        "png2rgb": "ffmpeg -y -i {fin} -pix_fmt rgba {fout}.rgb",
+        "yuv2png": "ffmpeg -y -f rawvideo -pixel_format {PixelFormat} -video_size {SourceWidth}x{SourceHeight} -i {fin} -vframes 1 {fout}.png",
+        "rgb2png": "ffmpeg -y -f rawvideo -pixel_format rgba -video_size {SourceWidth}x{SourceHeight} -i {fin} -vframes 1 {fout}.png"
+    }
+    shell = fmtmap[mode]
+    fmt1, fmt2 = mode.split('2')
+    inglob = "{}/*.{}".format(inpath, fmt1)
     for fin in glob.glob(inglob):
         inname = os.path.basename(fin).split('.')[0]
-        fout = "{outpath}/{inname}".format(outpath=outpath,inname=inname)
-        meta = meta_fn(fin)
-        cmd = shell.format(fin=fin, **meta, fout=fout)
-        #print(cmd)
-        TASKS.append(cmd)
-
-
-def yuv2png(inpath, outpath):
-    shell = "ffmpeg -y -f rawvideo -video_size {SourceWidth}x{SourceHeight} -pixel_format {PixelFormat} -i {fin} -vframes 1 {fout}.png"
-    inglob = "{inpath}/*.yuv".format(inpath=inpath)
-    for fin in glob.glob(inglob):
-        inname = os.path.basename(fin).split('.')[0]
-        fout = "{outpath}/{inname}".format(outpath=outpath,inname=inname)
+        fout = "{}/{}".format(outpath,inname)
         meta = meta_fn(fin)
         cmd = shell.format(fin=fin, **meta, fout=fout)
         print(cmd)
@@ -352,14 +340,13 @@ def call_script(script):
 
 
 if __name__ == '__main__':
-    funcMap = {'yuv1stframe':yuv1stframe,'topng': yuv2png, 'toyuv': png2yuv,
-                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop, 'psnr': measure, 
-                 'netop':netop, 'vtmenc':vtmenc, 'show':show}
+    funcMap = {'yuv1stframe':yuv1stframe, 'netop':netop, 
+                 'hpmenc': hpmenc, 'hpmcrop': hpmcrop,
+                 'vtmenc':vtmenc, 'show':show}
 
     parser = argparse.ArgumentParser(
         description='Media Encoding Batch Utils. Copyright @ 2016-2020')
-    parser.add_argument(
-        "verb", choices=list(funcMap.keys()))
+    parser.add_argument("verb")
     parser.add_argument("inpath")
     parser.add_argument("outpath", default="./")
     parser.add_argument("--host", type=str, default="off",
@@ -387,13 +374,18 @@ if __name__ == '__main__':
         Conf.host = HOST["host."+args.host]
 
     os.makedirs(args.outpath, exist_ok=True)
-    if args.verb in ['hpmenc', 'vtmenc']:
+    if '2' in args.verb:
+        convert(args.inpath, args.outpath, args.verb)
+    elif args.verb in ['psnr', 'ssim', 'vmaf']:
+        measure(args.inpath, args.outpath, args.verb)
+        sys.exit()
+    elif args.verb in ['show']:
+        funcMap[args.verb](args.inpath, args.outpath)
+        sys.exit()
+    elif args.verb in ['hpmenc', 'vtmenc']:
         funcMap[args.verb](args.inpath, args.outpath, args.qps)
     elif args.verb == 'netop':
         netop(args.inpath, args.outpath, args.op)
-    elif args.verb in ['psnr', 'show']:
-        funcMap[args.verb](args.inpath, args.outpath)
-        sys.exit()
     else:
         funcMap[args.verb](args.inpath, args.outpath)
     with open("tasks.json","w") as f:
@@ -446,8 +438,6 @@ if __name__ == '__main__':
             print("\n--- SCP downloading ---\n")
             os.system("scp -r {}:{}/* {}".format(args.host,remout,args.outpath))
 
-    print("\n--- Job done. ---")
+    print("--- Job done. ---")
 
-    
-# %%
 

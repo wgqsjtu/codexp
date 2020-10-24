@@ -13,10 +13,10 @@ python cbatch.py verb inpath outpath --opt options
 运行模式包括：本地快速运行，本地服务器模式，远程服务器模式。服务器模式下，可以一直提交新的任务(bug)。
 
 快速任务verb包括：
-
-- toyuv： ffmpeg png to yuv
-- topng： ffmpeg yuv to png
-- psnr： ffmpeg measure psnr, 从输入文件名匹配输出文件名，测量psnr，并汇总输出measure.csv到当前目录
+- 格式转换类，使用ffmpeg进行格式转换
+  - png2yuv, yuv2png, png2rgb, rgb2png
+- 指标测量类，使用ffmpeg进行指标测量，从输入文件名匹配输出文件名，并汇总输出measure.csv到当前目录
+  - psnr, ssim, vmaf
 - vtmenc：使用 VVC VTM 编码器进行编码，需配置路径和命令行
 - hpmenc：使用 AVS HPM 编码器进行编码，需配置路径和命令行
 - hpmcrop：使用ffmpeg切去HPM编码后的自动padding
@@ -35,6 +35,7 @@ python cbatch.py verb inpath outpath --opt options
 使用注意：
 
 - 无需安装任何python包
+- 运行前请先修改 host.local 中的编码器路径信息
 - 一般需使用绝对路径，可以软链接到你的实验目录，如`ln ~/codexp/cbatch.py ~/test/cbatch.py`，这样即可在实验目录使用相对路径。
 - 目前server仅支持Linux发行版，使用server模式需先在代码里配置多线程数量，如`RunPool(32)`
 
