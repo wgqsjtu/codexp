@@ -1,20 +1,18 @@
-#!/usr/bin/env python3
-"""
-Very simple HTTP server in python for logging requests
-Usage::
-    ./server.py [<port>]
-"""
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib import parse
 import logging
 import subprocess
 from multiprocessing import Pool
-import os, time, json
+import os
+import time
+import json
+
 
 class Result:
     def __init__(self):
         self.result = {}
         self.last = None
+
     def busy(self, key=None):
         if self.last:
             if not key:
@@ -22,11 +20,11 @@ class Result:
             return self.result[key]._number_left
         else:
             return 0
-            
+
 
 class Conf:
     def __init__(self):
-        self.conf ={}
+        self.conf = {}
 
     def load(self, fpath):
         if not os.path.exists(fpath):
@@ -37,6 +35,7 @@ class Conf:
     def save(self, fpath):
         with open(fpath, "w") as f:
             json.dump(self.conf, f, indent=4)
+
 
 class S(BaseHTTPRequestHandler):
 
@@ -53,7 +52,7 @@ class S(BaseHTTPRequestHandler):
         elif self.path == '/path':
             cwd = os.getcwd()
             stamp = time.strftime("%m%d%H%M", time.localtime())
-            res = "{}/{}".format(cwd,stamp)
+            res = "{}/{}".format(cwd, stamp)
             os.makedirs(res+"/inpath", exist_ok=True)
             os.makedirs(res+"/outpath", exist_ok=True)
             self._set_response()
@@ -67,22 +66,24 @@ class S(BaseHTTPRequestHandler):
             self.wfile.write(str(RunResult.busy(key)).encode('utf-8'))
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
-        post_data = self.rfile.read(content_length) # <--- Gets the data itself
-        #logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
+        # <--- Gets the size of data
+        content_length = int(self.headers['Content-Length'])
+        # <--- Gets the data itself
+        post_data = self.rfile.read(content_length)
+        # logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
         #        str(self.path), str(self.headers), post_data.decode('utf-8'))
         if self.path == '/add':
             data = parse.parse_qs(post_data.decode('utf-8'))
-            #print(data)
+            # print(data)
             fpath = data['fpath'][0]
             core = int(data['core'][0])
             key = data['key'][0]
-            logging.info("POST /add %s",data)
+            logging.info("POST /add %s", data)
             if RunConf.load(fpath) == -1:
                 self._set_response()
                 self.wfile.write("Invalid Configure File".encode('utf-8'))
             else:
-                res = run(core,key)
+                res = run(core, key)
                 print(res)
                 self._set_response()
                 self.wfile.write(res.encode('utf-8'))
@@ -92,7 +93,7 @@ def serve(server_class=HTTPServer, handler_class=S, port=42024):
     logging.basicConfig(level=logging.INFO)
     server_address = ('0.0.0.0', port)
     httpd = server_class(server_address, handler_class)
-    logging.info('Starting httpd at %s:%s \n'%('0.0.0.0', port))
+    logging.info('Starting httpd at %s:%s \n' % ('0.0.0.0', port))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -104,22 +105,21 @@ def serve(server_class=HTTPServer, handler_class=S, port=42024):
 def call_script(script):
     desc = script.split('/')[-1]
     stamp = time.strftime("%m-%d %H:%M", time.localtime())
-    print("- [%s] start :"%stamp, desc)
-    #time.sleep(5)
+    print("- [%s] start :" % stamp, desc)
     subprocess.run(script, shell=True)
     stamp = time.strftime("%m-%d %H:%M", time.localtime())
-    print("- [%s] finish:"%stamp, desc)
+    print("- [%s] finish:" % stamp, desc)
 
 
-def run(core=4,key=None):
+def run(core=4, key=None):
     conf = RunConf.conf
     scripts = []
     if type(conf) is list:
         scripts = conf
         res = '\n'.join([
             '\n---Excute specified tasks.---',
-            'Excute the %d shell script with %d process.\n' % \
-                (len(scripts), core)
+            'Excute the %d shell script with %d process.\n' %
+            (len(scripts), core)
         ])
     elif type(conf) is dict:
         tasks = conf["tasks"]
@@ -139,13 +139,13 @@ def run(core=4,key=None):
             count[status] += 1
             if status != "finish":
                 scripts.append(tvalue["shell"])
-    
+
         res = '\n'.join([
             '\n---Excute specified tasks.---',
-            'Total %d tasks, %d wait, %d fail, %d success.' % \
-                (len(tasks), count["wait"], count["excute"], count["finish"]),
-            'Excute the %d shell script with %d process.\n' % \
-                (len(scripts), core)
+            'Total %d tasks, %d wait, %d fail, %d success.' %
+            (len(tasks), count["wait"], count["excute"], count["finish"]),
+            'Excute the %d shell script with %d process.\n' %
+            (len(scripts), core)
         ])
     RunResult.last = key
     RunResult.result[key] = RunPool.map_async(call_script, scripts)
@@ -159,8 +159,7 @@ if __name__ == '__main__':
     RunResult = Result()
     RunConf = Conf()
     HistoryConf = Conf()
-    
+
     from sys import argv
     port = int(argv[1]) if len(argv) == 2 else 42024
     serve(port=port)
-

@@ -1,4 +1,3 @@
-# %%
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 import os
@@ -8,19 +7,20 @@ import argparse
 import glob
 import time
 from adapter import *
-
 from string import Formatter
+
+
 class SafeFormatter(Formatter):
     def get_value(self, key, args, kwargs):
         if key not in kwargs:
-            return "{%s}"%key
+            return "{%s}" % key
         else:
             return kwargs[key]
-            
+
 
 form = SafeFormatter()
 
-base_url = 'http://127.0.0.1:42024' # Set destination URL here
+base_url = 'http://127.0.0.1:42024'  # Set destination URL here
 
 conf_pro = {
     "once": {
@@ -65,10 +65,12 @@ default_sys1 = {
     "$modename": "state['$mode'].replace('$','')"
 }
 
+
 def calcAllFrames(state):
     meta = state['meta'][state['input']]
-    return readyuv420(state['input'], \
-            meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
+    return readyuv420(state['input'],
+                      meta["InputBitDepth"], meta["SourceWidth"], meta["SourceHeight"])
+
 
 def modeQPIF(state):
     # QPIF 32.7 -> QP32 qpif0.3*nframes
@@ -81,17 +83,20 @@ def modeQPIF(state):
     qpif = int((qp + 1 - para)*nframes)
     return "--QP={} --QPIncrementFrame={}".format(qp, qpif)
 
+
 def post(addr, pf):
     request = Request(base_url+addr, urlencode(pf).encode())
     return urlopen(request).read().decode()
+
 
 def get(addr):
     request = Request(base_url+addr)
     return urlopen(request).read().decode()
 
+
 def loadconf(fn=None):
     if not fn:
-        fn = getlatestjob() 
+        fn = getlatestjob()
     if not os.path.exists(fn):
         print("The Job doesn't exist. Use new.")
         exit(0)
@@ -99,14 +104,17 @@ def loadconf(fn=None):
         conf = json.load(f)
     return conf
 
+
 def saveconf(conf, fn=None):
     if not fn:
-        fn = getlatestjob() 
+        fn = getlatestjob()
     with open(fn, "w") as f:
         json.dump(conf, f, indent=4)
 
+
 def getabspath(s):
     return os.path.abspath(os.path.expanduser(s))
+
 
 def readyuv420(filename, bitdepth, W, H):
     if bitdepth == '8':
@@ -116,19 +124,21 @@ def readyuv420(filename, bitdepth, W, H):
     pixelsPerFrame = int(H) * int(W) * 3 // 2
     bytesPerFrame = bytesPerPixel * pixelsPerFrame
     fp = open(filename, 'rb')
-    fp.seek(0,2)
+    fp.seek(0, 2)
     totalframe = fp.tell() // bytesPerFrame
     return str(totalframe)
+
 
 def getlatestjob():
     jobs = sorted(glob.glob("job*.json"))
     return jobs[-1] if jobs else ""
 
+
 def readcfg(fn):
     meta = {}
     with open(fn, "r") as f:
         for line in f:
-            k,v = line.replace(':',' ').split()
+            k, v = line.replace(':', ' ').split()
             meta[k] = v
     return meta
 
@@ -136,15 +146,15 @@ def readcfg(fn):
 def new(template="conf_win_x265"):
     lastjob = getlatestjob().split('.')[0]
     idx = int(lastjob[3:]) + 1 if lastjob else 1  # get next job id
-    curjob = "job%03d.json"%idx
+    curjob = "job%03d.json" % idx
     with open(curjob, "w") as f:
         json.dump(conf_pro, f, indent=4)
-    print("[ok] %s newly created."%curjob)
+    print("[ok] %s newly created." % curjob)
 
 
 def meta_fn():
     conf = loadconf()
-    
+
     for file in conf['meta']:
         filename = os.path.basename(file)
         meta = conf["each"]["$meta"].copy()
@@ -160,10 +170,10 @@ def meta_fn():
                 meta["InputChromaFormat"] = item
             elif re.match(r"^[0-9]*$", item):
                 meta["FrameRate"] = item
-        
-        state = {'input':file,'meta':{file:meta}}  # using for eval context
+
+        state = {'input': file, 'meta': {file: meta}}  # using for eval context
         new_meta = {}
-        for key,value in meta.items():
+        for key, value in meta.items():
             if "$" in key:
                 new_meta[key[1:]] = str(eval(value))
             else:
@@ -175,9 +185,10 @@ def meta_fn():
             with open(cfg, "w") as autocfg:
                 for key, value in new_meta.items():
                     autocfg.write('{0:30}: {1}\n'.format(key, value))
-    
+
     saveconf(conf)
-    print("[meta+%3d] Auto parsing finished. Please check."%len(conf["meta"]))
+    print("[meta+%3d] Auto parsing finished. Please check." %
+          len(conf["meta"]))
 
 
 def start(force=False):
@@ -200,14 +211,14 @@ def start(force=False):
     for key in conf["each"].keys():
         if "$" in key:
             key_exec.append(key)
-    
+
     it_sheet = []
     for v in conf["iter"]:
-        it_sheet.append( v.replace(' ', '').split('|') )
+        it_sheet.append(v.replace(' ', '').split('|'))
     key_iter = it_sheet[0]
     key_exec.extend(key_iter)
 
-    state = {k:"{%s}"%k for k in key_exec} # keep the same after format
+    state = {k: "{%s}" % k for k in key_exec}  # keep the same after format
     state.update(conf["once"])
 
     for key in key_once_exec:
@@ -220,9 +231,9 @@ def start(force=False):
             t = getabspath(t)
             os.makedirs(os.path.dirname(t), exist_ok=True)
         state[key] = t
-    
+
     # get sheet(2D) -> table(3D)
-    it_table = [] # 3D array
+    it_table = []  # 3D array
     for p1 in it_sheet[1:]:
         t1 = []
         for p2 in p1:
@@ -235,25 +246,26 @@ def start(force=False):
                     t2.append(p3)
             t1.append(t2)
         it_table.append(t1)
-    
+
     # get table(3D) ->paras(2D), using eval trick
     # 1,2|3,4,5|6|7,8 -> 1367,1368,1467,1468,...
     paras = []
     for p in it_table:
-        tuples = ','.join(["t%d"%t for t in range(len(p))])+','
-        fors = ' '.join(['for t{0} in p[{0}]'.format(t) for t in range(len(p))])
-        trick = "[({}) {}]".format(tuples,fors)
-        paras.extend(eval(trick,{"p":p}))
-    
+        tuples = ','.join(["t%d" % t for t in range(len(p))])+','
+        fors = ' '.join(['for t{0} in p[{0}]'.format(t)
+                         for t in range(len(p))])
+        trick = "[({}) {}]".format(tuples, fors)
+        paras.extend(eval(trick, {"p": p}))
+
     if len(paras) == 0:
         print("Maybe the wrong file glob.")
 
     # get meta, get files list
-    if 'meta' not in conf or len(conf['meta'])==0:
+    if 'meta' not in conf or len(conf['meta']) == 0:
         files = []
         for p in it_table:
             files.extend(p[0])
-        conf['meta'] = {k:{} for k in list(set(files))}
+        conf['meta'] = {k: {} for k in list(set(files))}
         saveconf(conf)
         meta_fn()  # from filename
         conf = loadconf()
@@ -264,20 +276,20 @@ def start(force=False):
     print(cmd)
     compute = conf["each"]
     for values in paras:
-        context = {k:v for k,v in zip(key_iter,values)}
+        context = {k: v for k, v in zip(key_iter, values)}
         state.update(context)
         meta = conf['meta'][state['input']]
         state.update(meta)
-        #print(state)
-        
+        # print(state)
+
         # compute {$each}
-        for k,v in compute.items():
+        for k, v in compute.items():
             if type(v) is str:
                 if k.startswith('$'):
                     state[k] = eval(v)
                 else:
                     state[k] = v.format(**state)
-        
+
         # regxp cmd to get options
         cmd_tmp = cmd.format(**state)
         opt_cfgs = re.findall(r"-c +([^ ]+.cfg)", cmd_tmp)
@@ -286,7 +298,7 @@ def start(force=False):
         # get meta, guess -c **/*.cfg
         for cfg in opt_cfgs:
             if not os.path.exists(cfg):
-                print("%s not found. You may use meta to parse filename."%cfg)
+                print("%s not found. You may use meta to parse filename." % cfg)
                 return
             cfgname = os.path.basename(cfg).split('.')[0]
             if (cfgname.split('_')[0]) == (state['$inname'].split('_')[0]):
@@ -298,7 +310,8 @@ def start(force=False):
         if len(opt_frames) > 0:
             nframes = opt_frames[-1]
         else:
-            nframes = conf['meta'][state['input']].get('FramesToBeEncoded', '0')
+            nframes = conf['meta'][state['input']].get(
+                'FramesToBeEncoded', '0')
 
         # process sys0.mode
         if '$mode' in key_iter:
@@ -308,11 +321,11 @@ def start(force=False):
                 state['$mode'] = eval(value)
             else:
                 state['$mode'] = value.format(**state)
-        
+
         shell = cmd.format(**state)
         output = state["output"].format(**state)
-        tasks[output] = {"status": "0/%s"%nframes, "shell": shell}
-    
+        tasks[output] = {"status": "0/%s" % nframes, "shell": shell}
+
     conf["tasks"] = tasks
     saveconf(conf)
     print("[task+%3d] Tasks generated." % len(tasks))
@@ -322,7 +335,7 @@ def run(core=4):
     try:
         print(get("/id"))
         fn = getlatestjob()
-        pf = {'fpath':fn,'core':core}
+        pf = {'fpath': fn, 'core': core}
         print(post("/add", pf))
     except:
         print("Server Not Running. Try python3 server.py")
@@ -330,34 +343,34 @@ def run(core=4):
 
 def show():
     history = loadconf(fn="history.json")
-    recent = sorted(history.keys(),reverse=True)
+    recent = sorted(history.keys(), reverse=True)
     tasks = history[recent[0]]
     count = {"wait": 0, "excute": 0, "finish": 0}
     print('\n---Analyze recent tasks.---')
-    print("EXP @",recent[0])
-    
+    print("EXP @", recent[0])
+
     # read log
     HASLOG = False
     if HASLOG:
         fnfix = "%s"
         results = []
-        sample = fnfix%next(iter(tasks))
+        sample = fnfix % next(iter(tasks))
         enctype = log_getEnctype(sample)
 
         for tkey, tvalue in tasks.items():
             status = "wait"
             cur, total = tvalue["status"].split('/')
-            fn = fnfix%tkey
+            fn = fnfix % tkey
             if os.path.exists(fn):
                 status, cur, result = log_adapter(fn, enctype)
                 if result:
                     results.append(result)
-            tvalue["status"] = "%3d/%3d"%(int(cur), int(total))
+            tvalue["status"] = "%3d/%3d" % (int(cur), int(total))
             count[status] += 1
-            print("[{}] {}".format(tvalue["status"],tkey.split("/")[-1]))
+            print("[{}] {}".format(tvalue["status"], tkey.split("/")[-1]))
         print('Total %d tasks, %d wait, %d excute, %d finish.' %
-            (len(tasks), count["wait"], count["excute"], count["finish"]))
-        with open("result.csv","w") as f:
+              (len(tasks), count["wait"], count["excute"], count["finish"]))
+        with open("result.csv", "w") as f:
             f.write(",".join(LOG_KEYS[enctype])+"\n")
             for result in results:
                 f.write(','.join(result)+'\n')
@@ -369,14 +382,14 @@ def show():
 
         for tkey, tvalue in tasks.items():
             status = "wait"
-            fn = fnfix%tkey
+            fn = fnfix % tkey
             if os.path.exists(fn):
                 status = "finish"
             else:
                 print(fn)
             count[status] += 1
         print('Total %d tasks, %d wait, %d excute, %d finish.' %
-            (len(tasks), count["wait"], count["excute"], count["finish"]))
+              (len(tasks), count["wait"], count["excute"], count["finish"]))
 
 
 if __name__ == '__main__':
@@ -390,7 +403,7 @@ if __name__ == '__main__':
                         help="run with n concurrent process")
     args = parser.parse_args()
     dict_func = {'new': new, 'start': start,
-                 'meta': meta_fn, 'run': run, 'show':show}
+                 'meta': meta_fn, 'run': run, 'show': show}
     if args.verb == 'start':
         start(args.force)
     elif args.verb == 'run':
@@ -398,6 +411,3 @@ if __name__ == '__main__':
     else:
         dict_func[args.verb]()
 
-
-
-# %%
