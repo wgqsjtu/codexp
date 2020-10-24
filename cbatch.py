@@ -49,7 +49,7 @@ class BaseConf:
         pass
 
 
-def post(addr, pf, base=None):
+def post(addr, pf):
     request = Request(Conf.baseurl+addr, urlencode(pf).encode())
     return urlopen(request).read().decode()
 
@@ -250,7 +250,6 @@ def convert(inpath, outpath, mode="png2yuv"):
         fout = "{}/{}".format(outpath, inname)
         meta = meta_fn(fin)
         cmd = shell.format(fin=fin, **meta, fout=fout)
-        print(cmd)
         TASKS.append(cmd)
 
 
@@ -269,7 +268,6 @@ def hpmenc(inpath, outpath, qplist=[]):
         for qp in qplist:
             fout = "{}/{}_{:02d}".format(outpath, inname, qp)
             cmd = shell.format(base=base, fin=fin, **meta, fout=fout, qp=qp)
-            #print(cmd)
             TASKS.append(cmd)
 
 
