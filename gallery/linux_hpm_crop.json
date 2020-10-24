@@ -1,9 +1,9 @@
 {
     "once": {
-        "title": "linux ffmpeg yuv2png",
+        "title": "linux ffmpeg hpmcrop",
         "base": "~/codexp",
-        "inpath": "~/test/23_hpmcrop",
-        "output": "~/test/24_topng/{$inname}"
+        "inpath": "~/test/22_hpmenc",
+        "output": "~/test/23_hpmcrop/{$inname}"
     },
     "iter": [
         "input",
@@ -14,6 +14,8 @@
         "$modename": "state['$mode'].replace('$','')",
         "video_size": "{SourceWidth}x{SourceHeight}",
         "$bit_depth": "'' if meta['InputBitDepth'] == '8' else '10le'",
+        "$true_width": "-(int(meta['SourceWidth'])//-8)*8",
+        "$true_height": "-(int(meta['SourceHeight'])//-8)*8",
         "pixel_format": "yuv{InputChromaFormat}p{$bit_depth}",
         "$mode": {
             "QP": "-q {para}",
@@ -30,8 +32,8 @@
         }
     },
     "shell": [
-        "ffmpeg -f rawvideo -video_size {SourceWidth}x{SourceHeight} -pixel_format {pixel_format}",
-        "-i {input}",
-        "-vframes 1 {output}.png"
+        "ffmpeg -f rawvideo -pixel_format yuv420p10le -video_size {$true_width}x{$true_height}",
+        "-i {input} -filter:v 'crop={SourceWidth}:{SourceHeight}:0:0' -vframes 1",
+        "-f rawvideo -pix_fmt {pixel_format} -s {SourceWidth}x{SourceHeight} {output}.yuv"
     ]
 }
